@@ -1,0 +1,7 @@
+name: git-constellation
+description: Regenerate your GitHub night-sky picture (placeholder until Milestone 10).
+runs:
+  using: composite
+  steps:
+    - run: echo "git-constellation action is not built yet."
+      shell: bash

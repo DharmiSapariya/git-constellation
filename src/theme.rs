@@ -1,0 +1,1 @@
+//! Palettes and language colors.
