@@ -1,0 +1,45 @@
+[package]
+name = "git-constellation"
+version = "0.1.0"
+edition = "2024"
+# Highest requirement in the resolved dependency graph (resvg, usvg, clap, ...
+# all declare 1.85), and edition 2024 itself needs 1.85.
+rust-version = "1.85"
+description = "Turn a GitHub account's public activity into a hand-drawn-feeling night sky."
+license = "MIT"
+readme = "README.md"
+
+[lib]
+name = "git_constellation"
+path = "src/lib.rs"
+
+[[bin]]
+name = "constel"
+path = "src/main.rs"
+
+[dependencies]
+# Error handling: typed errors in the library, a catch-all in the binary only.
+thiserror = "2.0.21"
+anyhow = "1.0.104"
+# Command-line parsing (derive keeps the definitions short and readable).
+clap = { version = "4.6.7", features = ["derive"] }
+# Data model, JSON fixtures and the constellation.toml config file.
+serde = { version = "1.0.229", features = ["derive"] }
+# `float_roundtrip` makes f64 values survive JSON exactly (default parsing can be 1 ULP off).
+serde_json = { version = "1.0.154", features = ["float_roundtrip"] }
+toml = "1.2.1"
+# Dates for contribution days and repo timestamps.
+chrono = { version = "0.4.45", features = ["serde"] }
+# Seeded, reproducible randomness (the sky must be byte-identical per seed).
+rand = "0.10.3"
+rand_chacha = "0.10.0"
+# SVG parsing and rasterising for PNG/GIF export (not used until Milestone 4+).
+resvg = "0.50.0"
+usvg = "0.50.0"
+tiny-skia = "0.12.0"
+# GIF encoding for the twinkle loop and timelapse.
+gif = "0.14.2"
+# Small blocking HTTP client for the GitHub GraphQL API.
+ureq = "3.5.2"
+# Tiny localhost server for `constel preview`.
+tiny_http = "0.12.0"
