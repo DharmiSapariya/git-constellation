@@ -1,0 +1,48 @@
+//! Text measuring: font sizes, conservative width estimates, repo-name cutting.
+
+/// Font sizes in pixels (2.5).
+pub const CONSTELLATION_FONT: f64 = 11.0;
+pub const REPO_FONT: f64 = 10.5;
+pub const SMALL_FONT: f64 = 9.0;
+/// Average glyph width as a share of font size, deliberately a little high.
+pub const WIDTH_NORMAL: f64 = 0.56;
+pub const WIDTH_UPPERCASE: f64 = 0.62;
+/// Extra spacing between letters in constellation names, in font sizes.
+pub const LETTER_SPACING: f64 = 0.16;
+/// Line height as a share of font size, and padding around every box.
+pub const LINE_HEIGHT: f64 = 1.3;
+pub const BOX_PAD: f64 = 2.0;
+/// Repo names longer than this are cut with an ellipsis.
+pub const MAX_NAME_CHARS: usize = 18;
+/// Cut a repo name to 18 characters, ending in a single ellipsis if shortened.
+pub fn truncate_name(name: &str) -> String {
+    if name.chars().count() <= MAX_NAME_CHARS {
+        return name.to_string();
+    }
+    let mut short: String = name.chars().take(MAX_NAME_CHARS - 1).collect();
+    short.push('\u{2026}');
+    short
+}
+
+/// Conservative text width. Characters outside ASCII (wide scripts, accents)
+/// count as a full font size each.
+pub fn text_width(text: &str, font_size: f64, uppercase_with_spacing: bool) -> f64 {
+    text.chars()
+        .map(|c| {
+            let glyph = if !c.is_ascii() {
+                1.0
+            } else if uppercase_with_spacing {
+                WIDTH_UPPERCASE
+            } else {
+                WIDTH_NORMAL
+            };
+            (glyph
+                + if uppercase_with_spacing {
+                    LETTER_SPACING
+                } else {
+                    0.0
+                })
+                * font_size
+        })
+        .sum()
+}
