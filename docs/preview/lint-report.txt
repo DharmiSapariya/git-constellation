@@ -1,0 +1,126 @@
+=== empty: 0 stars, 0 constellations, 0 loose, layout try #1, scale 1.00
+HARD checks (must pass)
+  [pass] every star has a position: 0 stars, 0 positions
+  [pass] star spacing: fewer than two stars
+  [pass] stars inside the margin and outside reserved areas: 0 stars checked
+  [pass] line crossings: 0 crossings among 0 lines
+  [pass] loose stars clear of lines: no loose stars near lines
+  [pass] constellation lines connect every star: 0 constellations
+  [pass] labels clear of stars, lines, labels, reserved areas and margin: 0 conflicts among 1 labels (0 left out)
+  [pass] constellation names sit nearer their own stars: 0 names checked
+  [pass] balance: no stars
+  [pass] no NaN or infinite numbers: positions, anchors, radii, labels
+SOFT checks (warnings)
+  [ ok ] coverage of the constellations' bounding box: fewer than two stars, not measured
+  [ ok ] average nearest-neighbor distance: fewer than two stars
+  [ ok ] distinct star hues: 0 (want at most 7)
+  [warn] largest star-free rectangle (stars only, dust comes later): 100% of the canvas (want under 30%)
+  [ ok ] gap between constellations: fewer than two constellations
+  [ ok ] labels left out for lack of room: 0 left out
+Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+
+=== tiny: 1 stars, 0 constellations, 1 loose, layout try #1, scale 1.00
+HARD checks (must pass)
+  [pass] every star has a position: 1 stars, 1 positions
+  [pass] star spacing: fewer than two stars
+  [pass] stars inside the margin and outside reserved areas: 1 stars checked
+  [pass] line crossings: 0 crossings among 0 lines
+  [pass] loose stars clear of lines: no loose stars near lines
+  [pass] constellation lines connect every star: 0 constellations
+  [pass] labels clear of stars, lines, labels, reserved areas and margin: 0 conflicts among 2 labels (0 left out)
+  [pass] constellation names sit nearer their own stars: 0 names checked
+  [pass] balance (star centroid near the center): off center by 0.0% of width (max 12%), 2.2% of height (max 15%)
+  [pass] no NaN or infinite numbers: positions, anchors, radii, labels
+SOFT checks (warnings)
+  [ ok ] coverage of the constellations' bounding box: fewer than two stars, not measured
+  [ ok ] average nearest-neighbor distance: fewer than two stars
+  [ ok ] distinct star hues: 1 (want at most 7)
+  [warn] largest star-free rectangle (stars only, dust comes later): 50% of the canvas (want under 30%)
+  [ ok ] gap between constellations: fewer than two constellations
+  [ ok ] labels left out for lack of room: 0 left out
+Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+
+=== small: 6 stars, 2 constellations, 0 loose, layout try #1, scale 1.00
+HARD checks (must pass)
+  [pass] every star has a position: 6 stars, 6 positions
+  [pass] star spacing: closest pair is flashcards and recipe-parser: 57.8px apart, needs 37.2px
+  [pass] stars inside the margin and outside reserved areas: 6 stars checked
+  [pass] line crossings: 0 crossings among 4 lines
+  [pass] loose stars clear of lines: no loose stars near lines
+  [pass] constellation lines connect every star: 2 constellations
+  [pass] labels clear of stars, lines, labels, reserved areas and margin: 0 conflicts among 5 labels (0 left out)
+  [pass] constellation names sit nearer their own stars: 2 names checked
+  [pass] balance (star centroid near the center): off center by 1.2% of width (max 12%), 1.5% of height (max 15%)
+  [pass] no NaN or infinite numbers: positions, anchors, radii, labels
+SOFT checks (warnings)
+  [ ok ] coverage of the constellations' bounding box: 56% of width (want 55-85%), 53% of height (want 45-80%)
+  [ ok ] average nearest-neighbor distance: 71.3px (want 38-150)
+  [ ok ] distinct star hues: 2 (want at most 7)
+  [warn] largest star-free rectangle (stars only, dust comes later): 43% of the canvas (want under 30%)
+  [ ok ] gap between constellations: closest stars of two constellations are 561px apart (want 60+)
+  [ ok ] labels left out for lack of room: 0 left out
+Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+
+=== medium: 22 stars, 5 constellations, 2 loose, layout try #1, scale 1.00
+HARD checks (must pass)
+  [pass] every star has a position: 22 stars, 22 positions
+  [pass] star spacing: closest pair is tiny-router and dotfiles-web: 45.7px apart, needs 34.8px
+  [pass] stars inside the margin and outside reserved areas: 22 stars checked
+  [pass] line crossings: 0 crossings among 18 lines
+  [pass] loose stars clear of lines: closest loose star is 216.2px from a line
+  [pass] constellation lines connect every star: 5 constellations
+  [pass] labels clear of stars, lines, labels, reserved areas and margin: 0 conflicts among 11 labels (0 left out)
+  [pass] constellation names sit nearer their own stars: 5 names checked
+  [pass] balance (star centroid near the center): off center by 1.2% of width (max 12%), 4.2% of height (max 15%)
+  [pass] no NaN or infinite numbers: positions, anchors, radii, labels
+SOFT checks (warnings)
+  [ ok ] coverage of the constellations' bounding box: 82% of width (want 55-85%), 69% of height (want 45-80%)
+  [ ok ] average nearest-neighbor distance: 77.7px (want 38-150)
+  [ ok ] distinct star hues: 7 (want at most 7)
+  [ ok ] largest star-free rectangle (stars only, dust comes later): 20% of the canvas (want under 30%)
+  [ ok ] gap between constellations: closest stars of two constellations are 90px apart (want 60+)
+  [ ok ] labels left out for lack of room: 0 left out
+Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+
+=== large: 60 stars, 5 constellations, 1 loose, layout try #4, scale 0.94
+HARD checks (must pass)
+  [pass] every star has a position: 60 stars, 60 positions
+  [pass] star spacing: closest pair is plucky-loom and dapper-lexer: 43.6px apart, needs 39.6px
+  [pass] stars inside the margin and outside reserved areas: 60 stars checked
+  [pass] line crossings: 0 crossings among 67 lines
+  [pass] loose stars clear of lines: closest loose star is 145.8px from a line
+  [pass] constellation lines connect every star: 5 constellations
+  [pass] labels clear of stars, lines, labels, reserved areas and margin: 0 conflicts among 22 labels (0 left out)
+  [pass] constellation names sit nearer their own stars: 5 names checked
+  [pass] balance (star centroid near the center): off center by 0.9% of width (max 12%), 0.8% of height (max 15%)
+  [pass] no NaN or infinite numbers: positions, anchors, radii, labels
+SOFT checks (warnings)
+  [ ok ] coverage of the constellations' bounding box: 85% of width (want 55-85%), 72% of height (want 45-80%)
+  [ ok ] average nearest-neighbor distance: 49.4px (want 38-150)
+  [ ok ] distinct star hues: 6 (want at most 7)
+  [ ok ] largest star-free rectangle (stars only, dust comes later): 17% of the canvas (want under 30%)
+  [ ok ] gap between constellations: closest stars of two constellations are 96px apart (want 60+)
+  [ ok ] labels left out for lack of room: 0 left out
+Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+
+=== edge: 13 stars, 2 constellations, 2 loose, layout try #5, scale 1.02
+HARD checks (must pass)
+  [pass] every star has a position: 13 stars, 13 positions
+  [pass] star spacing: closest pair is alpha and alpha-2: 56.5px apart, needs 37.2px
+  [pass] stars inside the margin and outside reserved areas: 13 stars checked
+  [pass] line crossings: 0 crossings among 11 lines
+  [pass] loose stars clear of lines: closest loose star is 264.2px from a line
+  [pass] constellation lines connect every star: 2 constellations
+  [pass] labels clear of stars, lines, labels, reserved areas and margin: 0 conflicts among 6 labels (0 left out)
+  [pass] constellation names sit nearer their own stars: 2 names checked
+  [pass] balance (star centroid near the center): off center by 1.2% of width (max 12%), 1.5% of height (max 15%)
+  [pass] no NaN or infinite numbers: positions, anchors, radii, labels
+SOFT checks (warnings)
+  [ ok ] coverage of the constellations' bounding box: 55% of width (want 55-85%), 46% of height (want 45-80%)
+  [ ok ] average nearest-neighbor distance: 99.8px (want 38-150)
+  [ ok ] distinct star hues: 3 (want at most 7)
+  [ ok ] largest star-free rectangle (stars only, dust comes later): 27% of the canvas (want under 30%)
+  [ ok ] gap between constellations: closest stars of two constellations are 463px apart (want 60+)
+  [ ok ] labels left out for lack of room: 0 left out
+Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+
