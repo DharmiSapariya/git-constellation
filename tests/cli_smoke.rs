@@ -5,7 +5,8 @@ use git_constellation::cli::{Cli, not_built_yet};
 
 #[test]
 fn render_prints_a_friendly_placeholder() {
-    let cli = Cli::try_parse_from(["constel", "render"]).expect("render should parse");
+    let cli = Cli::try_parse_from(["constel", "render", "--from-file", "a.json"])
+        .expect("render should parse");
     let message = not_built_yet(&cli.command);
     assert!(message.contains("constel render"));
 }

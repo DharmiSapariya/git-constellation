@@ -43,3 +43,9 @@ gif = "0.14.2"
 ureq = "3.5.2"
 # Tiny localhost server for `constel preview`.
 tiny_http = "0.12.0"
+
+# Dependencies (the SVG parser and renderer especially) are slow when built
+# without optimizations, which made rendering tests take minutes. Optimizing
+# only the dependencies keeps our own code fast to rebuild and easy to debug.
+[profile.dev.package."*"]
+opt-level = 3

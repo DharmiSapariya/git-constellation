@@ -1,12 +1,14 @@
 //! Soft lint checks: warnings with numbers (Section 10.3). They never fail a build.
 
 use super::{Check, check};
+use crate::SkyError;
 use crate::layout::labels::WIDE_HALO;
 use crate::layout::{
     CANVAS_HEIGHT, CANVAS_WIDTH, COVERAGE_HEIGHT, COVERAGE_WIDTH, Layout, coverage_points, dist,
     star_radius,
 };
 use crate::model::{LanguageKey, Point, SkyModel};
+use crate::theme::{Rgb, luma};
 
 /// Average nearest-neighbor distance must stay between these.
 pub const NEAREST_NEIGHBOR_RANGE: (f64, f64) = (38.0, 150.0);
@@ -183,4 +185,93 @@ fn labels_left_out(layout: &Layout) -> Check {
         layout.dropped_labels == 0,
         format!("{} left out", layout.dropped_labels),
     )
+}
+
+// ---------------------------------------------------------------------------
+// Checks on a rendered PNG (brightness and clipping)
+// ---------------------------------------------------------------------------
+
+/// Mean brightness on gamma-encoded values (0 to 1) that a dark sky should have.
+pub const DARK_MEAN_LUMA: (f64, f64) = (0.08, 0.30);
+/// ...and a light (paper-like) one.
+pub const LIGHT_MEAN_LUMA: (f64, f64) = (0.80, 0.95);
+/// A channel at or above this counts as clipped (blown out to white).
+pub const CLIP_LEVEL: u8 = 253;
+/// Dark skies may have at most this share of clipped pixels.
+pub const MAX_CLIPPED_DARK: f64 = 0.04;
+
+/// What was measured on a picture.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PixelStats {
+    /// Mean of `0.2126 R + 0.7152 G + 0.0722 B` on the encoded 0..255 values, scaled to 0..1.
+    /// Not linearized: a night sky measured in linear light is about 0.01 and would falsely fail.
+    pub mean_luma: f64,
+    /// Share of pixels whose three channels are all at least `CLIP_LEVEL`.
+    pub clipped: f64,
+}
+
+/// Measure a PNG.
+pub fn pixel_stats(png: &[u8]) -> Result<PixelStats, SkyError> {
+    let pixmap = tiny_skia::Pixmap::decode_png(png)
+        .map_err(|e| SkyError::Render(format!("the PNG could not be read for linting: {e}")))?;
+    let pixels = pixmap.pixels();
+    if pixels.is_empty() {
+        return Err(SkyError::Render("the PNG has no pixels".to_string()));
+    }
+    let (mut total, mut clipped) = (0.0, 0usize);
+    for p in pixels {
+        total += luma(Rgb {
+            r: p.red(),
+            g: p.green(),
+            b: p.blue(),
+        });
+        if p.red() >= CLIP_LEVEL && p.green() >= CLIP_LEVEL && p.blue() >= CLIP_LEVEL {
+            clipped += 1;
+        }
+    }
+    Ok(PixelStats {
+        mean_luma: total / pixels.len() as f64,
+        clipped: clipped as f64 / pixels.len() as f64,
+    })
+}
+
+/// The picture-based soft checks: mean brightness and clipped pixels, with the
+/// measured numbers in the detail. `dark` says which brightness range applies.
+pub fn pixel_checks(png: &[u8], dark: bool) -> Result<Vec<Check>, SkyError> {
+    let stats = pixel_stats(png)?;
+    let (low, high) = if dark {
+        DARK_MEAN_LUMA
+    } else {
+        LIGHT_MEAN_LUMA
+    };
+    let brightness = check(
+        "picture brightness (gamma-encoded mean luma)",
+        (low..=high).contains(&stats.mean_luma),
+        format!(
+            "{:.3} (want {low:.2}-{high:.2} for a {} theme)",
+            stats.mean_luma,
+            if dark { "dark" } else { "light" }
+        ),
+    );
+    let clipping = if dark {
+        check(
+            "clipped pixels",
+            stats.clipped <= MAX_CLIPPED_DARK,
+            format!(
+                "{:.2}% of pixels are 253+ in every channel (want at most {:.0}%)",
+                stats.clipped * 100.0,
+                MAX_CLIPPED_DARK * 100.0
+            ),
+        )
+    } else {
+        check(
+            "clipped pixels",
+            true,
+            format!(
+                "{:.2}% of pixels are 253+ in every channel (not limited for light themes)",
+                stats.clipped * 100.0
+            ),
+        )
+    };
+    Ok(vec![brightness, clipping])
 }

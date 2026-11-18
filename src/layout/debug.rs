@@ -3,7 +3,7 @@
 
 use super::{CANVAS_HEIGHT, CANVAS_WIDTH, Layout, Region, SAFE_MARGIN, star_radius};
 use crate::model::SkyModel;
-use crate::svg::num;
+use crate::svg::fmt as num;
 
 /// Fill colors for constellations (loose stars are white).
 const PALETTE: [&str; 7] = [

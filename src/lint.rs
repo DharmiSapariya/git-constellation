@@ -8,7 +8,9 @@ mod soft;
 
 pub use report::{Check, LintReport};
 pub use soft::{
-    CONSTELLATION_GAP, MAX_EMPTY_SHARE, MAX_HUES, NEAREST_NEIGHBOR_RANGE, largest_empty_share,
+    CLIP_LEVEL, CONSTELLATION_GAP, DARK_MEAN_LUMA, LIGHT_MEAN_LUMA, MAX_CLIPPED_DARK,
+    MAX_EMPTY_SHARE, MAX_HUES, NEAREST_NEIGHBOR_RANGE, PixelStats, largest_empty_share,
+    pixel_checks, pixel_stats,
 };
 
 use crate::layout::labels::{LabelKind, Obstacles, name_belongs};
@@ -359,7 +361,7 @@ pub fn lint(model: &SkyModel, layout: &Layout) -> LintReport {
         deferred: vec![
             "text contrast 4.5:1 (hard 5)",
             "SVG size cap and animation budget (hard 7)",
-            "luminance histogram (soft 3)",
+            "luminance of the finished picture (soft 3: run lint::pixel_checks on the rendered PNG)",
         ],
     }
 }

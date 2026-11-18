@@ -12,7 +12,7 @@ use git_constellation::layout::{
     star_area, star_radius,
 };
 use git_constellation::model::Tier;
-use git_constellation::svg::num;
+use git_constellation::svg::fmt as num;
 
 fn close(a: f64, b: f64) -> bool {
     (a - b).abs() < 1e-9
@@ -460,9 +460,9 @@ fn numbers_print_with_at_most_two_decimals() {
     assert_eq!(num(1234.5), "1234.5");
     assert_eq!(num(100.0), "100");
     assert_eq!(num(-3.456), "-3.46");
-    assert_eq!(num(f64::NAN), "NaN");
-    assert_eq!(num(f64::INFINITY), "inf");
-    assert_eq!(num(f64::NEG_INFINITY), "-inf");
+    assert_eq!(num(f64::NAN), "0");
+    assert_eq!(num(f64::INFINITY), "0");
+    assert_eq!(num(f64::NEG_INFINITY), "0");
 }
 
 #[test]

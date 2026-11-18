@@ -138,7 +138,7 @@ fn the_pixels_show_a_dark_sky_with_bright_stars() {
 fn a_broken_svg_is_a_friendly_error_not_a_panic() {
     let error = svg_to_png("this is not svg", 1.0).unwrap_err().to_string();
     assert!(
-        error.contains("rendering failed") && error.contains("SVG"),
+        error.contains("could not be read") && error.contains("SVG"),
         "{error}"
     );
     assert!(

@@ -3,9 +3,10 @@
 use std::path::PathBuf;
 
 use chrono::NaiveDate;
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::config::Overrides;
+use crate::export::Format;
 use crate::model::{LabelMode, ThemeName};
 
 /// Turn a GitHub account's public activity into a night-sky picture.
@@ -40,6 +41,9 @@ pub struct GlobalArgs {
     /// Draw forks too, as hollow "borrowed" stars
     #[arg(long, global = true)]
     pub include_forks: bool,
+    /// night, day or auto: `day` picks the paper theme unless --theme says otherwise
+    #[arg(long, global = true, value_name = "WHEN", value_enum)]
+    pub time_of_day: Option<TimeOfDay>,
     /// Draw no faces on the moon and other characters
     #[arg(long, global = true)]
     pub no_faces: bool,
@@ -49,13 +53,25 @@ pub struct GlobalArgs {
     pub static_mode: bool,
 }
 
+/// A hint for choosing a theme. Resolved here, in the CLI layer only.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum TimeOfDay {
+    Auto,
+    Night,
+    Day,
+}
+
 impl GlobalArgs {
     /// Convert the flags into the overrides the config code understands. A
     /// flag that was not given stays `None` so it does not beat the config file.
     pub fn into_overrides(self) -> Overrides {
         Overrides {
             config: self.config,
-            theme: self.theme,
+            // `day` means the paper theme, but never overrides an explicit --theme.
+            // Night skies (and auto) leave the theme alone.
+            theme: self
+                .theme
+                .or((self.time_of_day == Some(TimeOfDay::Day)).then_some(ThemeName::Paper)),
             date: self.date,
             seed: self.seed,
             labels: self.labels,
@@ -71,11 +87,34 @@ fn parse_date(text: &str) -> Result<NaiveDate, String> {
         .map_err(|_| format!("`{text}` is not a date. Use the form YYYY-MM-DD, like 2026-11-14."))
 }
 
+/// What `constel render` needs.
+#[derive(Debug, Clone, PartialEq, Args)]
+pub struct RenderArgs {
+    /// The activity JSON file to draw
+    #[arg(long, value_name = "ACTIVITY.json")]
+    pub from_file: PathBuf,
+    /// Where to write the picture (default: constellation.svg or .png)
+    #[arg(long, value_name = "PATH")]
+    pub out: Option<PathBuf>,
+    /// svg or png
+    #[arg(long, value_name = "FORMAT", default_value = "svg")]
+    pub format: Format,
+    /// Zoom for PNG output (2 doubles the size)
+    #[arg(long, value_name = "N", default_value_t = 1.0)]
+    pub scale: f32,
+    /// Add film grain to the background
+    #[arg(long)]
+    pub paper_grain: bool,
+    /// Draw only the sky (temporary: removed in Milestone 5)
+    #[arg(long, hide = true)]
+    pub background_only: bool,
+}
+
 /// Every subcommand `constel` will have once all milestones are done.
-#[derive(Debug, PartialEq, Eq, Subcommand)]
+#[derive(Debug, PartialEq, Subcommand)]
 pub enum Command {
-    /// Render the sky as SVG, PNG or GIF
-    Render,
+    /// Render the sky as SVG or PNG
+    Render(RenderArgs),
     /// Render a year of the sky forming as an animated GIF
     Timelapse,
     /// Render a 1200x630 social share card
@@ -97,7 +136,7 @@ impl Command {
     /// The name the user types on the command line.
     pub fn name(&self) -> &'static str {
         match self {
-            Command::Render => "render",
+            Command::Render(_) => "render",
             Command::Timelapse => "timelapse",
             Command::Card => "card",
             Command::Stats => "stats",
@@ -129,7 +168,17 @@ mod tests {
     #[test]
     fn every_subcommand_parses() {
         let cases = [
-            (vec!["render"], Command::Render),
+            (
+                vec!["render", "--from-file", "a.json"],
+                Command::Render(RenderArgs {
+                    from_file: PathBuf::from("a.json"),
+                    out: None,
+                    format: Format::Svg,
+                    scale: 1.0,
+                    paper_grain: false,
+                    background_only: false,
+                }),
+            ),
             (vec!["timelapse"], Command::Timelapse),
             (vec!["card"], Command::Card),
             (vec!["stats"], Command::Stats),
@@ -150,7 +199,17 @@ mod tests {
 
     #[test]
     fn global_flags_parse_before_and_after_the_subcommand() {
-        let cli = parse(&["--theme", "dusk", "render", "--seed", "42", "--static"]).unwrap();
+        let cli = parse(&[
+            "--theme",
+            "dusk",
+            "render",
+            "--from-file",
+            "a.json",
+            "--seed",
+            "42",
+            "--static",
+        ])
+        .unwrap();
         let overrides = cli.global.into_overrides();
         assert_eq!(overrides.theme, Some(ThemeName::Dusk));
         assert_eq!(overrides.seed, Some(42));
@@ -181,21 +240,48 @@ mod tests {
 
     #[test]
     fn absent_flags_do_not_override_the_config_file() {
-        let overrides = parse(&["render"]).unwrap().global.into_overrides();
+        let overrides = parse(&["render", "--from-file", "a.json"])
+            .unwrap()
+            .global
+            .into_overrides();
         assert_eq!(overrides, Overrides::default());
     }
 
     #[test]
+    fn time_of_day_day_picks_paper_unless_a_theme_is_given() {
+        let day = |extra: &[&str]| {
+            let mut args = vec!["render", "--from-file", "a.json", "--time-of-day", "day"];
+            args.extend_from_slice(extra);
+            parse(&args).unwrap().global.into_overrides().theme
+        };
+        assert_eq!(day(&[]), Some(ThemeName::Paper));
+        assert_eq!(
+            day(&["--theme", "dusk"]),
+            Some(ThemeName::Dusk),
+            "an explicit theme wins"
+        );
+    }
+
+    #[test]
+    fn time_of_day_night_and_auto_leave_the_theme_alone() {
+        for when in ["night", "auto"] {
+            let cli = parse(&["render", "--from-file", "a.json", "--time-of-day", when]).unwrap();
+            assert_eq!(cli.global.into_overrides().theme, None, "{when}");
+        }
+        assert!(parse(&["render", "--from-file", "a.json", "--time-of-day", "noon"]).is_err());
+    }
+
+    #[test]
     fn bad_flag_values_give_friendly_errors() {
-        let theme = parse(&["render", "--theme", "neon"])
+        let theme = parse(&["render", "--from-file", "a.json", "--theme", "neon"])
             .unwrap_err()
             .to_string();
         assert!(theme.contains("unknown theme `neon`") && theme.contains("midnight"));
-        let date = parse(&["render", "--date", "14/11/2026"])
+        let date = parse(&["render", "--from-file", "a.json", "--date", "14/11/2026"])
             .unwrap_err()
             .to_string();
         assert!(date.contains("YYYY-MM-DD"));
-        assert!(parse(&["render", "--labels", "some"]).is_err());
+        assert!(parse(&["render", "--from-file", "a.json", "--labels", "some"]).is_err());
     }
 
     #[test]
