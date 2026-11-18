@@ -234,6 +234,4 @@ If you've got opinions about any of these, or a really good constellation name, 
 
 <sub>Inspired by <a href="https://github.com/yalongwastaken/git-koi">git-koi</a>. Public data only. MIT licensed.</sub>
 
-<sub>Work in progress, being built with 🤍 by Dharmi Sapariya.</sub>
-
 </div>
