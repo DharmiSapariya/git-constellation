@@ -149,11 +149,11 @@ fn busy_weeks_get_more_stars_than_quiet_ones() {
     let dens = densities(&weeks_with(|i| if i == 20 { 1.0 } else { 0.0 }));
     let counts = dot_counts(&dens);
     assert_eq!(counts.len(), 53);
-    assert_eq!(counts[20], 16, "3 + 13 * 1.0");
-    assert_eq!(counts[0], 5, "round(3 + 13 * 0.15)");
+    assert_eq!(counts[20], 22, "2 + 20 * 1.0");
+    assert_eq!(counts[0], 5, "round(2 + 20 * 0.15)");
     assert!(counts[20] > counts[19] * 2);
     let half = dot_counts(&[0.5]);
-    assert_eq!(half[0], 10, "round(3 + 13 * 0.5)");
+    assert_eq!(half[0], 12, "round(2 + 20 * 0.5)");
 }
 
 #[test]
@@ -187,7 +187,7 @@ fn the_clouds_are_two_per_segment_and_follow_the_opacity_formula() {
             "a core cloud then a fringe cloud"
         );
         for c in pair {
-            let want = 0.04 + 0.06 * dens[i];
+            let want = 0.02 + 0.07 * dens[i];
             assert!((c.opacity - want).abs() < 1e-9, "segment {i}");
             assert!(
                 c.rx > 0.0
@@ -289,7 +289,11 @@ fn the_drawn_layer_uses_shared_gradients_and_grouped_dots() {
         &[],
     );
     let band = &svg[svg.find("<g id=\"milkyway\">").unwrap()..];
-    assert_eq!(band.matches("<ellipse").count(), 106);
+    assert_eq!(
+        band.matches("<ellipse").count(),
+        112,
+        "106 clouds and 6 dust lanes"
+    );
     let gradients: std::collections::BTreeSet<&str> = band
         .split("fill=\"url(#")
         .skip(1)
@@ -297,8 +301,8 @@ fn the_drawn_layer_uses_shared_gradients_and_grouped_dots() {
         .collect();
     assert_eq!(
         gradients.len(),
-        2,
-        "one shared gradient each for core and fringe"
+        3,
+        "one shared gradient each for core, fringe and the dust lanes"
     );
     assert!(band.matches("<circle").count() <= 700);
     assert!(

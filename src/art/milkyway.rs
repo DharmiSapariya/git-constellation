@@ -1,5 +1,5 @@
-//! The contribution band (Milky Way): a glowing S-curve of soft clouds and tiny
-//! stars, one segment per week, brighter where there were more contributions.
+//! The contribution band (Milky Way): a glowing S-curve of soft clouds, dark dust
+//! lanes and tiny stars, one segment per week, brighter where there were more contributions.
 
 use super::layer_rng;
 use crate::layout::dist;
@@ -23,20 +23,35 @@ pub const WIDTH_POWER: f64 = 0.7;
 pub const DEFAULT_SEGMENTS: usize = 53;
 /// A quiet week still glows a little.
 pub const MIN_DENSITY: f64 = 0.15;
-/// Cloud opacity is `BASE + SPAN * density`.
-pub const CLOUD_OPACITY_BASE: f64 = 0.04;
-pub const CLOUD_OPACITY_SPAN: f64 = 0.06;
+/// Cloud opacity is `BASE + SPAN * density`. Kept low so overlapping clouds stay soft.
+pub const CLOUD_OPACITY_BASE: f64 = 0.02;
+pub const CLOUD_OPACITY_SPAN: f64 = 0.07;
 /// Cloud size: `rx` is this many segment lengths, `ry` this share of the band width.
-pub const CLOUD_RX_PER_LENGTH: f64 = 2.8;
+pub const CLOUD_RX_PER_LENGTH: f64 = 1.6;
 pub const CLOUD_RY_SHARE: f64 = 0.55;
 /// Clouds sit off the centerline by up to this share of the band width.
 pub const CLOUD_OFFSET_SHARE: f64 = 0.15;
 /// Stars per segment: `round(BASE + SPAN * density)`, but never more than `MAX_DOTS` in all.
-pub const DOTS_BASE: f64 = 3.0;
-pub const DOTS_SPAN: f64 = 13.0;
+pub const DOTS_BASE: f64 = 2.0;
+pub const DOTS_SPAN: f64 = 20.0;
 pub const MAX_DOTS: usize = 700;
 pub const DOT_RADIUS: (f64, f64) = (0.4, 1.0);
 pub const DOT_OPACITIES: [f64; 4] = [0.15, 0.3, 0.5, 0.7];
+
+// ---- Dust lanes: dark streaks along the band that give it texture ----
+/// How many lanes, and the random stream they use.
+pub const LANE_COUNT: usize = 6;
+pub const LANES: &str = "milkyway-lanes";
+/// Lane size on the default canvas: `rx` along the band, `ry` across it.
+pub const LANE_RX: f64 = 90.0;
+pub const LANE_RY: f64 = 14.0;
+/// A lane sits off the centerline by up to this share of the band width.
+pub const LANE_OFFSET_SHARE: f64 = 0.25;
+/// Each lane sits somewhere inside its own sixth of the band (a share of that sixth).
+pub const LANE_SLOT: (f64, f64) = (0.15, 0.85);
+/// Lane opacity on dark themes (sky_bottom color) and on light themes (ink color).
+pub const LANE_OPACITY: f64 = 0.10;
+pub const LANE_OPACITY_LIGHT: f64 = 0.04;
 
 fn scaled_points(width: f64, height: f64) -> [Point; 4] {
     CONTROL_POINTS.map(|(x, y)| (x * width / 1200.0, y * height / 600.0))
@@ -104,6 +119,11 @@ pub fn dot_counts(densities: &[f64]) -> Vec<usize> {
         .collect()
 }
 
+/// Opacity of a cloud in a segment of the given density, after the theme's strength.
+pub fn cloud_opacity(density: f64, strength: f64) -> f64 {
+    ((CLOUD_OPACITY_BASE + CLOUD_OPACITY_SPAN * density) * strength).clamp(0.0, 1.0)
+}
+
 /// One soft cloud along the band.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BandCloud {
@@ -157,11 +177,45 @@ pub fn band_clouds(
                 ry: CLOUD_RY_SHARE * band,
                 angle_deg: ty.atan2(tx).to_degrees(),
                 core,
-                opacity: ((CLOUD_OPACITY_BASE + CLOUD_OPACITY_SPAN * d) * strength).clamp(0.0, 1.0),
+                opacity: cloud_opacity(*d, strength),
             });
         }
     }
     clouds
+}
+
+/// One dark dust lane lying along the band.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct BandLane {
+    pub cx: f64,
+    pub cy: f64,
+    pub rx: f64,
+    pub ry: f64,
+    pub angle_deg: f64,
+}
+
+/// Six dark lanes spread along the band, each off the centerline a little and
+/// turned to the direction of travel.
+pub fn band_lanes(seed: u64, width: f64, height: f64) -> Vec<BandLane> {
+    let p = scaled_points(width, height);
+    let mut rng = layer_rng(seed, LANES);
+    let mut lanes = Vec::with_capacity(LANE_COUNT);
+    for i in 0..LANE_COUNT {
+        let slot = rng.range(LANE_SLOT.0, LANE_SLOT.1);
+        let t = (i as f64 + slot) / LANE_COUNT as f64;
+        let center = point_at(&p, t);
+        let (tx, ty) = tangent_at(&p, t);
+        let norm = tx.hypot(ty).max(1e-9);
+        let offset = rng.range(-LANE_OFFSET_SHARE, LANE_OFFSET_SHARE) * thickness(t, height);
+        lanes.push(BandLane {
+            cx: center.0 - ty / norm * offset,
+            cy: center.1 + tx / norm * offset,
+            rx: LANE_RX * width / 1200.0,
+            ry: LANE_RY * height / 600.0,
+            angle_deg: ty.atan2(tx).to_degrees(),
+        });
+    }
+    lanes
 }
 
 /// Tiny stars scattered across the band, roughly Gaussian across its width.
@@ -194,7 +248,7 @@ pub fn band_dots(seed: u64, width: f64, height: f64, densities: &[f64]) -> Vec<B
     dots
 }
 
-/// Draw the band: soft clouds first, then the tiny stars on top.
+/// Draw the band: soft clouds first, then the dark dust lanes, then the tiny stars on top.
 pub fn draw_milkyway(b: &mut SvgBuilder, theme: &Theme, weeks: &[WeekDensity], seed: u64) {
     let (w, h) = (b.width(), b.height());
     let density = densities(weeks);
@@ -214,6 +268,14 @@ pub fn draw_milkyway(b: &mut SvgBuilder, theme: &Theme, weeks: &[WeekDensity], s
         gradient(b, theme.milkyway_fringe),
     );
     let clouds = band_clouds(seed, w, h, &density, theme.milkyway_strength);
+    let lanes = band_lanes(seed, w, h);
+    // Dark lanes use the sky's own darkest color; on light themes, the ink color.
+    let (lane_color, lane_opacity) = if theme.is_dark {
+        (theme.sky_bottom, LANE_OPACITY)
+    } else {
+        (theme.ink, LANE_OPACITY_LIGHT)
+    };
+    let lane_id = gradient(b, lane_color);
     let dots = band_dots(seed, w, h, &density);
     b.group(&[("id", "milkyway".to_string())], |g| {
         for c in &clouds {
@@ -229,6 +291,27 @@ pub fn draw_milkyway(b: &mut SvgBuilder, theme: &Theme, weeks: &[WeekDensity], s
                     (
                         "transform",
                         format!("rotate({} {} {})", fmt(c.angle_deg), fmt(c.cx), fmt(c.cy)),
+                    ),
+                ],
+            ));
+        }
+        for lane in &lanes {
+            g.add(&svg::ellipse(
+                lane.cx,
+                lane.cy,
+                lane.rx,
+                lane.ry,
+                &[
+                    ("fill", format!("url(#{lane_id})")),
+                    ("opacity", fmt(lane_opacity)),
+                    (
+                        "transform",
+                        format!(
+                            "rotate({} {} {})",
+                            fmt(lane.angle_deg),
+                            fmt(lane.cx),
+                            fmt(lane.cy)
+                        ),
                     ),
                 ],
             ));

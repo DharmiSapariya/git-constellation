@@ -25,6 +25,13 @@ pub const NEBULA_OVERSHOOT: f64 = 100.0;
 /// Watercolor blobs (paper theme).
 pub const WATERCOLOR_COUNT: usize = 3;
 
+// ---- Paper fibers: a few faint ink dashes, paper theme only ----
+pub const FIBER_COUNT: usize = 4;
+/// Dash length range in pixels, stroke width, and opacity.
+pub const FIBER_LENGTH: (f64, f64) = (6.0, 14.0);
+pub const FIBER_WIDTH: f64 = 0.6;
+pub const FIBER_OPACITY: f64 = 0.08;
+
 // ---- Dust ----
 pub const DUST_MIN_SPACING: f64 = 14.0;
 pub const DUST_ATTEMPTS: usize = 4000;
@@ -169,7 +176,35 @@ pub fn draw_sky(b: &mut SvgBuilder, theme: &Theme) {
     });
 }
 
-/// Nebula clouds on dark themes, watercolor blobs on paper, nothing on mono.
+/// One paper-fiber dash, from `(x1, y1)` to `(x2, y2)`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Fiber {
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+}
+
+/// Four seeded dashes at random places and angles.
+pub fn paper_fibers(seed: u64, width: f64, height: f64) -> Vec<Fiber> {
+    let mut rng = layer_rng(seed, super::FIBERS);
+    let mut fibers = Vec::with_capacity(FIBER_COUNT);
+    for _ in 0..FIBER_COUNT {
+        let (x1, y1) = (rng.range(0.0, width), rng.range(0.0, height));
+        let length = rng.range(FIBER_LENGTH.0, FIBER_LENGTH.1);
+        let angle = rng.range(0.0, std::f64::consts::PI);
+        fibers.push(Fiber {
+            x1,
+            y1,
+            x2: x1 + length * angle.cos(),
+            y2: y1 + length * angle.sin(),
+        });
+    }
+    fibers
+}
+
+/// Nebula clouds on dark themes, watercolor blobs (and a few paper fibers) on
+/// paper, nothing on mono.
 pub fn draw_nebula(b: &mut SvgBuilder, theme: &Theme, seed: u64) {
     let count = match theme.backdrop {
         Backdrop::Nebula => NEBULA_COUNT,
@@ -202,6 +237,11 @@ pub fn draw_nebula(b: &mut SvgBuilder, theme: &Theme, seed: u64) {
         })
         .collect();
     let list = clouds(seed, b.width(), b.height(), count);
+    let fibers = if theme.backdrop == Backdrop::Watercolor {
+        paper_fibers(seed, b.width(), b.height())
+    } else {
+        Vec::new()
+    };
     b.group(&[("id", "nebula".to_string())], |g| {
         for cloud in &list {
             g.add(&svg::ellipse(
@@ -221,6 +261,25 @@ pub fn draw_nebula(b: &mut SvgBuilder, theme: &Theme, seed: u64) {
                             fmt(cloud.cy)
                         ),
                     ),
+                ],
+            ));
+        }
+        for f in &fibers {
+            let d = format!(
+                "M {} {} L {} {}",
+                fmt(f.x1),
+                fmt(f.y1),
+                fmt(f.x2),
+                fmt(f.y2)
+            );
+            g.add(&svg::path(
+                &d,
+                &[
+                    ("fill", "none".to_string()),
+                    ("stroke", theme.ink.to_string()),
+                    ("stroke-width", fmt(FIBER_WIDTH)),
+                    ("stroke-linecap", "round".to_string()),
+                    ("opacity", fmt(FIBER_OPACITY)),
                 ],
             ));
         }

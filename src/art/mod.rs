@@ -21,6 +21,7 @@ pub const NEBULA: &str = "nebula";
 pub const DUST: &str = "dust";
 pub const MILKYWAY: &str = "milkyway";
 pub const GRAIN: &str = "grain";
+pub const FIBERS: &str = "paper-fibers";
 
 /// The seeded random stream for one art layer: the sky's seed, mixed with the
 /// layer's name by the hand-written FNV-1a hash.
