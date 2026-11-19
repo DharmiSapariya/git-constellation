@@ -2,6 +2,7 @@
 
 pub mod background;
 pub mod hud;
+pub mod labels;
 pub mod lines;
 pub mod milkyway;
 pub mod moon;
@@ -10,7 +11,9 @@ pub mod sprites;
 pub mod stars;
 
 use crate::layout::anchors::SeededRng;
-use crate::model::SkyModel;
+use crate::layout::geometry::star_radius;
+use crate::layout::{Layout, Rect};
+use crate::model::{LabelMode, SkyModel};
 use crate::rules::MAX_DUST_COUNT;
 use crate::svg::SvgBuilder;
 use crate::theme::Theme;
@@ -22,6 +25,7 @@ pub const DUST: &str = "dust";
 pub const MILKYWAY: &str = "milkyway";
 pub const GRAIN: &str = "grain";
 pub const FIBERS: &str = "paper-fibers";
+pub const STARS: &str = "stars";
 
 /// The seeded random stream for one art layer: the sky's seed, mixed with the
 /// layer's name by the hand-written FNV-1a hash.
@@ -71,10 +75,92 @@ pub fn background_svg(
         model.seed,
         model.dust_count.min(MAX_DUST_COUNT),
         avoid,
+        &[],
     );
-    milkyway::draw_milkyway(&mut b, theme, &model.milkyway, model.seed);
+    milkyway::draw_milkyway(&mut b, theme, &model.milkyway, model.seed, avoid, &[]);
     if options.grain {
         background::draw_grain(&mut b, model.seed);
     }
     b.finish()
+}
+
+/// The whole sky: the background, then lines, stars, labels and the HUD.
+/// `labels` is the label mode (`none` draws no label at all).
+pub fn sky_svg(
+    model: &SkyModel,
+    layout: &Layout,
+    theme: &Theme,
+    options: &ArtOptions,
+    labels: LabelMode,
+) -> String {
+    compose(model, layout, theme, options, labels, true).0
+}
+
+/// The same sky with no text at all (no labels, no HUD). The linter renders this
+/// to measure what is behind each label. Dust and Milky Way dots still keep clear
+/// of the labels that would be there, so the picture matches the real one.
+pub fn sky_svg_without_text(
+    model: &SkyModel,
+    layout: &Layout,
+    theme: &Theme,
+    options: &ArtOptions,
+    labels: LabelMode,
+) -> String {
+    compose(model, layout, theme, options, labels, false).0
+}
+
+/// Like `sky_svg`, and also says how many constellation lines were too short to draw.
+pub fn sky_svg_with_stats(
+    model: &SkyModel,
+    layout: &Layout,
+    theme: &Theme,
+    options: &ArtOptions,
+    labels: LabelMode,
+) -> (String, usize) {
+    compose(model, layout, theme, options, labels, true)
+}
+
+fn compose(
+    model: &SkyModel,
+    layout: &Layout,
+    theme: &Theme,
+    options: &ArtOptions,
+    labels: LabelMode,
+    with_text: bool,
+) -> (String, usize) {
+    let mut b = SvgBuilder::new(
+        options.width,
+        options.height,
+        &format!("{}'s constellation sky", model.username),
+        "A night sky of stars, constellation lines and a Milky Way of contributions.",
+    );
+    let circles: Vec<(f64, f64, f64)> = model
+        .stars
+        .iter()
+        .zip(&layout.positions)
+        .map(|(star, position)| (position.0, position.1, star_radius(star.tier)))
+        .collect();
+    let shown = labels::drawn_labels(&layout.labels, labels);
+    let rects: Vec<Rect> = shown.iter().map(|label| label.rect).collect();
+    background::draw_sky(&mut b, theme);
+    background::draw_nebula(&mut b, theme, model.seed);
+    background::draw_dust(
+        &mut b,
+        theme,
+        model.seed,
+        model.dust_count.min(MAX_DUST_COUNT),
+        &circles,
+        &rects,
+    );
+    milkyway::draw_milkyway(&mut b, theme, &model.milkyway, model.seed, &circles, &rects);
+    if options.grain {
+        background::draw_grain(&mut b, model.seed);
+    }
+    let skipped = lines::draw_lines(&mut b, theme, model, layout);
+    stars::draw_stars(&mut b, theme, model, &layout.positions);
+    if with_text {
+        labels::draw_labels(&mut b, theme, &layout.labels, labels);
+        hud::draw_hud(&mut b, theme, model);
+    }
+    (b.finish(), skipped)
 }

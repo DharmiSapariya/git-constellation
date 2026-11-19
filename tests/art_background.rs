@@ -326,7 +326,7 @@ fn nebula_size_rotation_and_placement_follow_the_rules() {
 #[test]
 fn dust_obeys_its_spacing_size_and_count_rules() {
     for seed in 0..20u64 {
-        let dots = dust_dots(seed, 1200.0, 600.0, 260, &[]);
+        let dots = dust_dots(seed, 1200.0, 600.0, 260, &[], &[]);
         assert!(
             dots.len() <= 260 && dots.len() > 150,
             "seed {seed}: {}",
@@ -345,14 +345,14 @@ fn dust_obeys_its_spacing_size_and_count_rules() {
         let tinted = dots.iter().filter(|d| d.tint).count() as f64 / dots.len() as f64;
         assert!((0.0..0.25).contains(&tinted), "seed {seed}: {tinted}");
     }
-    let small = dust_dots(1, 1200.0, 600.0, 10, &[]);
+    let small = dust_dots(1, 1200.0, 600.0, 10, &[], &[]);
     assert_eq!(small.len(), 10);
-    assert!(dust_dots(1, 1200.0, 600.0, 0, &[]).is_empty());
+    assert!(dust_dots(1, 1200.0, 600.0, 0, &[], &[]).is_empty());
     // Most dots are tiny: the radius follows 0.5 + 0.7 * u^2.
-    let dots = dust_dots(3, 1200.0, 600.0, 260, &[]);
+    let dots = dust_dots(3, 1200.0, 600.0, 260, &[], &[]);
     assert!(dots.iter().filter(|d| d.r < 0.85).count() > dots.len() / 2);
     // Impossible to fit: gives up gracefully instead of looping.
-    assert!(dust_dots(1, 200.0, 100.0, 5000, &[]).len() < 200);
+    assert!(dust_dots(1, 200.0, 100.0, 5000, &[], &[]).len() < 200);
 }
 
 #[test]
@@ -362,7 +362,7 @@ fn dust_keeps_away_from_listed_stars() {
         (900.0, 400.0, 30.0),
         (600.0, 300.0, 8.0),
     ];
-    let dots = dust_dots(7, 1200.0, 600.0, 260, &avoid);
+    let dots = dust_dots(7, 1200.0, 600.0, 260, &avoid, &[]);
     assert!(!dots.is_empty());
     for d in &dots {
         for &(x, y, r) in &avoid {
@@ -373,7 +373,7 @@ fn dust_keeps_away_from_listed_stars() {
         }
     }
     // The empty avoid list changes nothing about the sequence of accepted dots' rules.
-    let without = dust_dots(7, 1200.0, 600.0, 260, &[]);
+    let without = dust_dots(7, 1200.0, 600.0, 260, &[], &[]);
     assert!(dots.len() <= without.len() + 5);
 }
 
@@ -498,9 +498,9 @@ fn each_layer_has_its_own_stream() {
 #[test]
 fn adding_or_skipping_one_layer_never_shifts_another() {
     // Dust placement is the same whether or not the nebula was computed first.
-    let before = dust_dots(11, 1200.0, 600.0, 260, &[]);
+    let before = dust_dots(11, 1200.0, 600.0, 260, &[], &[]);
     let _ = clouds(11, 1200.0, 600.0, 5);
-    assert_eq!(before, dust_dots(11, 1200.0, 600.0, 260, &[]));
+    assert_eq!(before, dust_dots(11, 1200.0, 600.0, 260, &[], &[]));
     let t = Theme::for_name(ThemeName::Midnight);
     let m = model("medium", Some(11));
     let with_grain = render(&m, &t, true);

@@ -233,7 +233,7 @@ fn the_clouds_follow_the_band_and_the_tangent() {
 #[test]
 fn the_tiny_stars_are_few_small_and_in_the_band() {
     let busy = densities(&weeks_with(|_| 1.0));
-    let dots = band_dots(3, 1200.0, 600.0, &busy);
+    let dots = band_dots(3, 1200.0, 600.0, &busy, &[], &[]);
     assert!(dots.len() <= 700 && dots.len() > 500, "{}", dots.len());
     let line = centerline(1200.0, 600.0, 600);
     for dot in &dots {
@@ -248,7 +248,7 @@ fn the_tiny_stars_are_few_small_and_in_the_band() {
             "a star is {nearest:.0}px from the centerline"
         );
     }
-    assert_eq!(dots, band_dots(3, 1200.0, 600.0, &busy));
+    assert_eq!(dots, band_dots(3, 1200.0, 600.0, &busy, &[], &[]));
     // Most stars sit near the middle of the band (roughly Gaussian).
     let core = dots.iter().filter(|d| d.core).count();
     assert!(core * 2 > dots.len(), "core {core} of {}", dots.len());
@@ -257,7 +257,7 @@ fn the_tiny_stars_are_few_small_and_in_the_band() {
 #[test]
 fn a_busy_week_really_has_more_stars_drawn_than_a_quiet_one() {
     let dens = densities(&weeks_with(|i| if i == 26 { 1.0 } else { 0.0 }));
-    let dots = band_dots(4, 1200.0, 600.0, &dens);
+    let dots = band_dots(4, 1200.0, 600.0, &dens, &[], &[]);
     let p = [
         (-60.0, 545.0),
         (330.0, 520.0),

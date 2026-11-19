@@ -4,9 +4,15 @@
 //! that need drawn output (contrast, file size, luminance) arrive with the art.
 
 mod report;
+mod sky;
 mod soft;
 
 pub use report::{Check, LintReport};
+pub use sky::{
+    DrawnChecks, MAX_SVG_BYTES, MIN_TEXT_CONTRAST, SOFT_SVG_BYTES, VISIBILITY_BIG_TIER,
+    VISIBILITY_MARGIN, VISIBILITY_RING, Visibility, drawn_checks, has_non_finite_number,
+    star_visibility, svg_hard_checks, text_contrast_check,
+};
 pub use soft::{
     CLIP_LEVEL, CONSTELLATION_GAP, DARK_MEAN_LUMA, LIGHT_MEAN_LUMA, MAX_CLIPPED_DARK,
     MAX_EMPTY_SHARE, MAX_HUES, NEAREST_NEIGHBOR_RANGE, PixelStats, largest_empty_share,

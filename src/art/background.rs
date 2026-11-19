@@ -2,7 +2,7 @@
 
 use super::layer_rng;
 use crate::layout::anchors::SeededRng;
-use crate::layout::{HUD_RECT, MOON_CENTER, dist};
+use crate::layout::{HUD_RECT, MOON_CENTER, Rect, dist};
 use crate::svg::{self, Stop, SvgBuilder, Units, fmt};
 use crate::theme::{Backdrop, Theme};
 
@@ -38,6 +38,8 @@ pub const DUST_ATTEMPTS: usize = 4000;
 pub const DUST_TINT_SHARE: f64 = 0.10;
 /// A dot is rejected if closer than this many radii to an `avoid` entry.
 pub const DUST_AVOID_RADII: f64 = 4.0;
+/// Dust and Milky Way dots keep this far outside every label box that is drawn.
+pub const DUST_LABEL_PAD: f64 = 4.0;
 
 // ---- Grain ----
 pub const GRAIN_OPACITY: f64 = 0.06;
@@ -298,7 +300,8 @@ pub struct DustDot {
 }
 
 /// Scatter up to `count` dust dots by dart throwing: each must be 14 px from
-/// every other dot, and `4 * radius` from every `avoid` entry `(x, y, radius)`.
+/// every other dot, `4 * radius` from every `avoid` entry `(x, y, radius)`, and
+/// outside every `avoid_rects` box (label boxes) inflated by `DUST_LABEL_PAD`.
 /// Gives up after 4000 throws, so a crowded canvas simply gets fewer dots.
 pub fn dust_dots(
     seed: u64,
@@ -306,6 +309,7 @@ pub fn dust_dots(
     height: f64,
     count: usize,
     avoid: &[(f64, f64, f64)],
+    avoid_rects: &[Rect],
 ) -> Vec<DustDot> {
     let mut rng: SeededRng = layer_rng(seed, super::DUST);
     let mut dots: Vec<DustDot> = Vec::new();
@@ -324,7 +328,10 @@ pub fn dust_dots(
         let clear_of_stars = avoid
             .iter()
             .all(|&(ax, ay, ar)| dist((x, y), (ax, ay)) >= DUST_AVOID_RADII * ar);
-        if clear_of_dust && clear_of_stars {
+        let clear_of_labels = avoid_rects
+            .iter()
+            .all(|r| !r.inflate(DUST_LABEL_PAD).contains((x, y)));
+        if clear_of_dust && clear_of_stars && clear_of_labels {
             dots.push(DustDot {
                 x,
                 y,
@@ -344,8 +351,9 @@ pub fn draw_dust(
     seed: u64,
     count: usize,
     avoid: &[(f64, f64, f64)],
+    avoid_rects: &[Rect],
 ) {
-    let dots = dust_dots(seed, b.width(), b.height(), count, avoid);
+    let dots = dust_dots(seed, b.width(), b.height(), count, avoid, avoid_rects);
     b.group(&[("id", "dust".to_string())], |g| {
         for (bucket, opacity) in theme.dust_opacities.iter().enumerate() {
             for tint in [false, true] {

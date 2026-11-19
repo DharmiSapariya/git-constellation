@@ -105,9 +105,6 @@ pub struct RenderArgs {
     /// Add film grain to the background
     #[arg(long)]
     pub paper_grain: bool,
-    /// Draw only the sky (temporary: removed in Milestone 5)
-    #[arg(long, hide = true)]
-    pub background_only: bool,
 }
 
 /// Every subcommand `constel` will have once all milestones are done.
@@ -176,7 +173,6 @@ mod tests {
                     format: Format::Svg,
                     scale: 1.0,
                     paper_grain: false,
-                    background_only: false,
                 }),
             ),
             (vec!["timelapse"], Command::Timelapse),

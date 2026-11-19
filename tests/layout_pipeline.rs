@@ -96,6 +96,7 @@ fn verify(model: &SkyModel, layout: &Layout, what: &str) {
             d(p, (1090.0, 112.0)) >= 90.0 + radius(model, i),
             "{what}: star {i} in the moon area"
         );
+        #[allow(clippy::needless_range_loop)]
         for j in (i + 1)..n {
             let (ri, rj) = (radius(model, i), radius(model, j));
             let need = (4.0 * ri.max(rj) + 14.0).max(ri + rj + 28.0);

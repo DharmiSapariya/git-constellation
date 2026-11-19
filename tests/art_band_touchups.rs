@@ -111,7 +111,10 @@ fn six_dust_lanes_follow_the_band_and_are_seeded() {
             .iter()
             .map(|p| ((p.0 - lane.cx).powi(2) + (p.1 - lane.cy).powi(2)).sqrt())
             .fold(f64::INFINITY, f64::min);
-        assert!(nearest < 0.25 * 170.0 + 8.0, "a lane is {nearest:.0}px off the band");
+        assert!(
+            nearest < 0.25 * 170.0 + 8.0,
+            "a lane is {nearest:.0}px off the band"
+        );
     }
     assert_eq!(lanes, band_lanes(5, 1200.0, 600.0));
     assert_ne!(lanes, band_lanes(6, 1200.0, 600.0));
@@ -128,7 +131,10 @@ fn the_lanes_are_drawn_once_each_in_the_band_layer() {
 fn paper_has_stronger_blobs_a_visible_band_and_four_faint_fibers() {
     let paper = Theme::for_name(ThemeName::Paper);
     assert!(paper.nebula.iter().all(|(_, o)| (0.35..=0.50).contains(o)));
-    assert!(paper.milkyway_strength >= 2.0, "the band must register on cream");
+    assert!(
+        paper.milkyway_strength >= 2.0,
+        "the band must register on cream"
+    );
     assert_eq!(paper.vignette, Some("#eadfca"));
     assert_eq!(paper.milkyway_core, "#cdb9ee");
 
@@ -149,5 +155,8 @@ fn paper_has_stronger_blobs_a_visible_band_and_four_faint_fibers() {
     assert_eq!(layer.matches("stroke-width=\"0.6\"").count(), FIBER_COUNT);
     assert_eq!(layer.matches("opacity=\"0.08\"").count(), FIBER_COUNT);
     let night = medium_svg(&Theme::for_name(ThemeName::Midnight));
-    assert!(!night.contains("stroke-width=\"0.6\""), "fibers are paper only");
+    assert!(
+        !night.contains("stroke-width=\"0.6\""),
+        "fibers are paper only"
+    );
 }

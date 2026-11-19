@@ -4,8 +4,31 @@
 use std::path::PathBuf;
 
 use chrono::NaiveDate;
-use git_constellation::Activity;
-use git_constellation::model::{DayCount, Repo};
+use git_constellation::model::{DayCount, Repo, ThemeName};
+use git_constellation::{Activity, Layout, Options, SkyModel, plan_sky};
+
+/// All six themes, for matrix tests.
+pub const THEME_NAMES: [ThemeName; 6] = [
+    ThemeName::Midnight,
+    ThemeName::Dusk,
+    ThemeName::Aurora,
+    ThemeName::Sakura,
+    ThemeName::Paper,
+    ThemeName::Mono,
+];
+
+/// A fixture's model and layout, planned the way the real renderer plans them.
+pub fn planned(fixture: &str, options: &Options) -> (SkyModel, Layout) {
+    plan_sky(&load_fixture(fixture), options).unwrap_or_else(|e| panic!("{fixture}: {e}"))
+}
+
+/// The options for one theme, everything else default.
+pub fn options_for(theme: ThemeName) -> Options {
+    Options {
+        theme,
+        ..Options::default()
+    }
+}
 
 /// The six fixture names from Section 10.4.
 pub const FIXTURES: [&str; 6] = ["empty", "tiny", "small", "medium", "large", "edge"];

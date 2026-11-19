@@ -1,8 +1,9 @@
 //! The contribution band (Milky Way): a glowing S-curve of soft clouds, dark dust
 //! lanes and tiny stars, one segment per week, brighter where there were more contributions.
 
+use super::background::DUST_LABEL_PAD;
 use super::layer_rng;
-use crate::layout::dist;
+use crate::layout::{Rect, dist};
 use crate::model::{Point, WeekDensity};
 use crate::svg::{self, Stop, SvgBuilder, Units, fmt};
 use crate::theme::Theme;
@@ -52,6 +53,8 @@ pub const LANE_SLOT: (f64, f64) = (0.15, 0.85);
 /// Lane opacity on dark themes (sky_bottom color) and on light themes (ink color).
 pub const LANE_OPACITY: f64 = 0.10;
 pub const LANE_OPACITY_LIGHT: f64 = 0.04;
+/// Band dots keep this far from every star center (and outside drawn label boxes).
+pub const BAND_STAR_CLEARANCE: f64 = 22.0;
 
 fn scaled_points(width: f64, height: f64) -> [Point; 4] {
     CONTROL_POINTS.map(|(x, y)| (x * width / 1200.0, y * height / 600.0))
@@ -219,7 +222,16 @@ pub fn band_lanes(seed: u64, width: f64, height: f64) -> Vec<BandLane> {
 }
 
 /// Tiny stars scattered across the band, roughly Gaussian across its width.
-pub fn band_dots(seed: u64, width: f64, height: f64, densities: &[f64]) -> Vec<BandDot> {
+/// Dots within `BAND_STAR_CLEARANCE` of a star center `(x, y, radius)` in `avoid`,
+/// or inside a label box in `avoid_rects` (inflated by `DUST_LABEL_PAD`), are left out.
+pub fn band_dots(
+    seed: u64,
+    width: f64,
+    height: f64,
+    densities: &[f64],
+    avoid: &[(f64, f64, f64)],
+    avoid_rects: &[Rect],
+) -> Vec<BandDot> {
     let p = scaled_points(width, height);
     let n = densities.len();
     let counts = dot_counts(densities);
@@ -236,9 +248,19 @@ pub fn band_dots(seed: u64, width: f64, height: f64, densities: &[f64]) -> Vec<B
             let offset = across * thickness(t, height) / 2.0;
             let r = rng.range(DOT_RADIUS.0, DOT_RADIUS.1);
             let bucket = rng.below(4);
+            let at = (center.0 - ty / norm * offset, center.1 + tx / norm * offset);
+            let near_star = avoid
+                .iter()
+                .any(|&(ax, ay, _)| dist(at, (ax, ay)) < BAND_STAR_CLEARANCE);
+            let under_label = avoid_rects
+                .iter()
+                .any(|rect| rect.inflate(DUST_LABEL_PAD).contains(at));
+            if near_star || under_label {
+                continue;
+            }
             dots.push(BandDot {
-                x: center.0 - ty / norm * offset,
-                y: center.1 + tx / norm * offset,
+                x: at.0,
+                y: at.1,
                 r,
                 bucket,
                 core: across.abs() < 0.5,
@@ -249,7 +271,14 @@ pub fn band_dots(seed: u64, width: f64, height: f64, densities: &[f64]) -> Vec<B
 }
 
 /// Draw the band: soft clouds first, then the dark dust lanes, then the tiny stars on top.
-pub fn draw_milkyway(b: &mut SvgBuilder, theme: &Theme, weeks: &[WeekDensity], seed: u64) {
+pub fn draw_milkyway(
+    b: &mut SvgBuilder,
+    theme: &Theme,
+    weeks: &[WeekDensity],
+    seed: u64,
+    avoid: &[(f64, f64, f64)],
+    avoid_rects: &[Rect],
+) {
     let (w, h) = (b.width(), b.height());
     let density = densities(weeks);
     let gradient = |b: &mut SvgBuilder, color: &'static str| {
@@ -276,7 +305,7 @@ pub fn draw_milkyway(b: &mut SvgBuilder, theme: &Theme, weeks: &[WeekDensity], s
         (theme.ink, LANE_OPACITY_LIGHT)
     };
     let lane_id = gradient(b, lane_color);
-    let dots = band_dots(seed, w, h, &density);
+    let dots = band_dots(seed, w, h, &density, avoid, avoid_rects);
     b.group(&[("id", "milkyway".to_string())], |g| {
         for c in &clouds {
             let fill = if c.core { &core_id } else { &fringe_id };

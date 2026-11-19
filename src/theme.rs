@@ -77,6 +77,37 @@ pub fn relative_luminance(c: Rgb) -> f64 {
     0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b)
 }
 
+/// Where the sky's middle color sits on the vertical gradient (a share of the height).
+pub const SKY_MID_STOP: f64 = 0.55;
+
+/// The sky's color at height `y` on a canvas `height` tall: the vertical
+/// gradient on dark themes, the paper itself on light ones. Text halos use it
+/// so they blend into whatever is behind them.
+pub fn sky_color_at(theme: &Theme, y: f64, height: f64) -> Rgb {
+    let parse = |hex: &str| parse_hex(hex).unwrap_or(Rgb { r: 0, g: 0, b: 0 });
+    if !theme.is_dark {
+        return parse(theme.background());
+    }
+    let share = if height > 0.0 {
+        (y / height).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    if share <= SKY_MID_STOP {
+        mix(
+            parse(theme.sky_top),
+            parse(theme.sky_mid),
+            share / SKY_MID_STOP,
+        )
+    } else {
+        mix(
+            parse(theme.sky_mid),
+            parse(theme.sky_bottom),
+            (share - SKY_MID_STOP) / (1.0 - SKY_MID_STOP),
+        )
+    }
+}
+
 /// WCAG contrast ratio, 1.0 to 21.0, whichever color is lighter.
 pub fn contrast_ratio(a: Rgb, b: Rgb) -> f64 {
     let (la, lb) = (relative_luminance(a), relative_luminance(b));
@@ -132,6 +163,8 @@ pub struct Theme {
     pub text: &'static str,
     pub text_dim: &'static str,
     pub ink: &'static str,
+    /// The warm accent for small highlights (the HUD sparkle). Ink on light themes.
+    pub accent: &'static str,
     pub dust_color: &'static str,
     pub dust_tint: &'static str,
     /// The four dust opacity buckets, faintest first.
@@ -162,6 +195,7 @@ impl Theme {
                 text: "#e6e9ff",
                 text_dim: "#aab2e0",
                 ink: "#1a1633",
+                accent: "#ffe08a",
                 dust_color: "#e6e9ff",
                 dust_tint: "#bfa8ff",
                 dust_opacities: NIGHT_DUST,
@@ -171,10 +205,11 @@ impl Theme {
                 is_dark: true,
                 sky_top: "#1b1233",
                 sky_mid: "#4a2b5f",
-                // Nudged from the spec's #b25f7a: with that value the theme's text only reached
-                // 3.98:1 on it (needs 4.5). Same hue, 8% darker: 4.59:1.
-                sky_bottom: "#a45770",
-                horizon_glow: ("#f0a070", 0.35),
+                // Nudged twice from the spec's #b25f7a and #f0a070 at 0.35: light text must reach
+                // 4.5:1 on what is really behind it (sky, glow, nebula and band together), and
+                // on the spec's rose it only reached 2.5 to 3.9. Same hues, deeper.
+                sky_bottom: "#7d4066",
+                horizon_glow: ("#e8807f", 0.22),
                 backdrop: Backdrop::Nebula,
                 nebula: [("#d9608c", 0.20), ("#7a4fb5", 0.20), ("#f0a070", 0.10)],
                 vignette: None,
@@ -184,8 +219,9 @@ impl Theme {
                 milkyway_strength: 1.5,
                 line: ("#ffe3ee", 0.38),
                 text: "#fff1f6",
-                text_dim: "#e6c3d2",
+                text_dim: "#f9dfeb",
                 ink: "#2a1238",
+                accent: "#ffe08a",
                 dust_color: "#fff1f6",
                 dust_tint: "#ffc9dd",
                 dust_opacities: NIGHT_DUST,
@@ -208,6 +244,7 @@ impl Theme {
                 text: "#e9fff9",
                 text_dim: "#a9d9cc",
                 ink: "#0a1a22",
+                accent: "#ffe08a",
                 dust_color: "#e9fff9",
                 dust_tint: "#a8ffe6",
                 dust_opacities: NIGHT_DUST,
@@ -228,8 +265,9 @@ impl Theme {
                 milkyway_strength: 1.0,
                 line: ("#ffe0f0", 0.38),
                 text: "#fff0f7",
-                text_dim: "#e6bcd3",
+                text_dim: "#f8d8e8",
                 ink: "#2a1038",
+                accent: "#ffe08a",
                 dust_color: "#fff0f7",
                 dust_tint: "#ffd0e6",
                 dust_opacities: NIGHT_DUST,
@@ -251,8 +289,9 @@ impl Theme {
                 milkyway_strength: 3.0,
                 line: ("#3a3350", 0.55),
                 text: "#3a3350",
-                text_dim: "#6e6788",
+                text_dim: "#4f4968",
                 ink: "#3a3350",
+                accent: "#3a3350",
                 dust_color: "#3a3350",
                 dust_tint: "#6e6788",
                 dust_opacities: INK_DUST,
@@ -269,19 +308,22 @@ impl Theme {
                 is_dark: true,
                 sky_top: "#0a0a0a",
                 sky_mid: "#121212",
-                sky_bottom: "#1c1c1c",
-                horizon_glow: ("#1c1c1c", 0.0),
+                // Nudged from #1c1c1c: with the softer Milky Way the empty sky averaged 0.076,
+                // under the 0.08 floor for dark themes.
+                sky_bottom: "#242424",
+                horizon_glow: ("#242424", 0.0),
                 backdrop: Backdrop::Plain,
                 nebula: [("#8c8c8c", 0.0); 3],
                 vignette: None,
                 milkyway_core: "#d9d9d9",
                 milkyway_fringe: "#8c8c8c",
                 milkyway_dots: ("#d9d9d9", "#8c8c8c"),
-                milkyway_strength: 0.55,
+                milkyway_strength: 0.7,
                 line: ("#d9d9d9", 0.38),
                 text: "#f2f2f2",
                 text_dim: "#b5b5b5",
                 ink: "#111111",
+                accent: "#f2f2f2",
                 dust_color: "#f2f2f2",
                 dust_tint: "#d9d9d9",
                 dust_opacities: NIGHT_DUST,
@@ -304,6 +346,7 @@ impl Theme {
                 text: "#111111",
                 text_dim: "#555555",
                 ink: "#111111",
+                accent: "#111111",
                 dust_color: "#111111",
                 dust_tint: "#555555",
                 dust_opacities: INK_DUST,

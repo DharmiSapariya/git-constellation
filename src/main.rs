@@ -21,7 +21,6 @@ fn run() -> Result<()> {
                 format: args.format,
                 scale: args.scale,
                 grain: args.paper_grain,
-                background_only: args.background_only,
                 options: &options,
             };
             let written = render_file(&request)?;

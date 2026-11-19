@@ -45,7 +45,6 @@ fn render(extra: &[&str], out: &str) -> Vec<u8> {
         "FIXTURE",
         "--out",
         path.to_str().unwrap(),
-        "--background-only",
     ];
     args.extend_from_slice(extra);
     let fixture_path = fixture("small");
@@ -176,13 +175,22 @@ fn a_config_file_sets_the_theme_and_a_flag_overrides_it() {
 }
 
 #[test]
-fn the_background_only_flag_is_hidden_from_help() {
+fn render_has_no_background_only_flag_any_more() {
     let help = text(&run(&["render", "--help"]).stdout);
     assert!(help.contains("--from-file") && help.contains("--format") && help.contains("--scale"));
+    assert!(help.contains("--paper-grain"));
     assert!(
         !help.contains("background-only"),
-        "it is temporary and hidden"
+        "the temporary flag is gone"
     );
+    let result = run(&[
+        "render",
+        "--from-file",
+        &fixture("small"),
+        "--background-only",
+    ]);
+    assert_eq!(result.status.code(), Some(2), "clap's own usage error");
+    assert!(text(&result.stderr).contains("--background-only"));
 }
 
 fn one_line_error(result: &Output) -> String {
@@ -195,12 +203,7 @@ fn one_line_error(result: &Output) -> String {
 
 #[test]
 fn a_missing_input_file_is_a_friendly_one_line_error() {
-    let result = run(&[
-        "render",
-        "--from-file",
-        "no/such/file.json",
-        "--background-only",
-    ]);
+    let result = run(&["render", "--from-file", "no/such/file.json"]);
     assert_eq!(result.status.code(), Some(1));
     let err = one_line_error(&result);
     assert!(
@@ -213,20 +216,25 @@ fn a_missing_input_file_is_a_friendly_one_line_error() {
 fn a_broken_input_file_is_a_friendly_error() {
     let bad = scratch("bad.json");
     std::fs::write(&bad, "{ \"username\": 5 }").unwrap();
-    let result = run(&[
-        "render",
-        "--from-file",
-        bad.to_str().unwrap(),
-        "--background-only",
-    ]);
+    let result = run(&["render", "--from-file", bad.to_str().unwrap()]);
     assert!(one_line_error(&result).contains("activity JSON"));
 }
 
 #[test]
-fn without_the_background_flag_the_command_explains_itself() {
-    let result = run(&["render", "--from-file", &fixture("small")]);
-    assert_eq!(result.status.code(), Some(1));
-    assert!(one_line_error(&result).contains("--background-only"));
+fn render_draws_the_full_sky_without_any_extra_flag() {
+    let out = scratch("full-sky.svg");
+    let result = run(&[
+        "render",
+        "--from-file",
+        &fixture("small"),
+        "--out",
+        out.to_str().unwrap(),
+    ]);
+    assert!(result.status.success(), "{}", text(&result.stderr));
+    let svg = std::fs::read_to_string(&out).expect("written");
+    for layer in ["stars", "lines", "labels", "hud"] {
+        assert!(svg.contains(&format!("<g id=\"{layer}\"")), "{layer}");
+    }
 }
 
 #[test]
@@ -244,7 +252,6 @@ fn bad_scales_and_formats_are_refused() {
             scale,
             "--out",
             out.to_str().unwrap(),
-            "--background-only",
         ]);
         assert!(!result.status.success(), "scale {scale}");
         assert!(
@@ -262,24 +269,16 @@ fn bad_scales_and_formats_are_refused() {
         "100",
         "--out",
         scratch("huge.png").to_str().unwrap(),
-        "--background-only",
     ]);
     assert!(one_line_error(&huge).contains("8000"));
-    let gif = run(&[
-        "render",
-        "--from-file",
-        &small,
-        "--format",
-        "gif",
-        "--background-only",
-    ]);
+    let gif = run(&["render", "--from-file", &small, "--format", "gif"]);
     assert_eq!(gif.status.code(), Some(2), "clap's own usage error");
     assert!(text(&gif.stderr).contains("unknown format"));
 }
 
 #[test]
 fn a_missing_required_flag_is_a_usage_error() {
-    let result = run(&["render", "--background-only"]);
+    let result = run(&["render"]);
     assert_eq!(result.status.code(), Some(2));
     assert!(text(&result.stderr).contains("--from-file"));
 }
@@ -292,7 +291,6 @@ fn an_unwritable_output_path_is_a_friendly_error() {
         &fixture("small"),
         "--out",
         "/no/such/folder/x.svg",
-        "--background-only",
     ]);
     assert!(one_line_error(&result).contains("could not write"));
 }

@@ -14,14 +14,20 @@ pub const LINE_HEIGHT: f64 = 1.3;
 pub const BOX_PAD: f64 = 2.0;
 /// Repo names longer than this are cut with an ellipsis.
 pub const MAX_NAME_CHARS: usize = 18;
-/// Cut a repo name to 18 characters, ending in a single ellipsis if shortened.
-pub fn truncate_name(name: &str) -> String {
-    if name.chars().count() <= MAX_NAME_CHARS {
-        return name.to_string();
+/// Cut `text` to at most `max_chars` characters (never bytes), ending in a
+/// single ellipsis if it was shortened.
+pub fn truncate_chars(text: &str, max_chars: usize) -> String {
+    if text.chars().count() <= max_chars {
+        return text.to_string();
     }
-    let mut short: String = name.chars().take(MAX_NAME_CHARS - 1).collect();
+    let mut short: String = text.chars().take(max_chars.saturating_sub(1)).collect();
     short.push('\u{2026}');
     short
+}
+
+/// Cut a repo name to 18 characters, ending in a single ellipsis if shortened.
+pub fn truncate_name(name: &str) -> String {
+    truncate_chars(name, MAX_NAME_CHARS)
 }
 
 /// Conservative text width. Characters outside ASCII (wide scripts, accents)

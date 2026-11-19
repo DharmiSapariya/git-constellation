@@ -223,9 +223,10 @@ fn the_exact_palette_values_are_pinned() {
 
     let d = Theme::for_name(ThemeName::Dusk);
     assert_eq!((d.sky_top, d.sky_mid), ("#1b1233", "#4a2b5f"));
-    // The one nudged value: the spec says #b25f7a, which fails the 4.5:1 text contrast.
-    assert_eq!(d.sky_bottom, "#a45770");
-    assert_eq!(d.horizon_glow, ("#f0a070", 0.35));
+    // Nudged from the spec's #b25f7a and #f0a070 at 0.35: light text must reach 4.5:1 on the
+    // real picture (sky, glow, nebula and band together), and on the spec's rose it did not.
+    assert_eq!(d.sky_bottom, "#7d4066");
+    assert_eq!(d.horizon_glow, ("#e8807f", 0.22));
     assert_eq!(
         d.nebula,
         [("#d9608c", 0.20), ("#7a4fb5", 0.20), ("#f0a070", 0.10)]
@@ -266,7 +267,7 @@ fn the_exact_palette_values_are_pinned() {
     let dark = Theme::mono(MonoVariant::Dark);
     assert_eq!(
         (dark.sky_top, dark.sky_mid, dark.sky_bottom),
-        ("#0a0a0a", "#121212", "#1c1c1c")
+        ("#0a0a0a", "#121212", "#242424")
     );
     assert_eq!(
         (dark.milkyway_core, dark.milkyway_fringe, dark.text),

@@ -3,11 +3,12 @@
 
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::{Arc, OnceLock};
 
-use crate::art::{ArtOptions, background_svg};
+use crate::art::{ArtOptions, sky_svg};
 use crate::model::Activity;
 use crate::theme::Theme;
-use crate::{Options, SkyError, build_sky};
+use crate::{Options, SkyError, plan_sky};
 
 /// No output side may be larger than this many pixels.
 pub const MAX_SIDE: u32 = 8000;
@@ -33,18 +34,44 @@ impl From<ExportError> for SkyError {
     }
 }
 
-/// Rasterize SVG text to a PNG at the given scale (1.0 keeps the SVG's size).
-/// Text is only drawn when fonts are available.
-pub fn svg_to_png(svg: &str, scale: f32) -> Result<Vec<u8>, ExportError> {
+/// The system fonts, loaded once (loading them is slow). Without them text would not be drawn.
+static FONTS: OnceLock<Arc<usvg::fontdb::Database>> = OnceLock::new();
+
+fn font_database() -> Arc<usvg::fontdb::Database> {
+    FONTS
+        .get_or_init(|| {
+            let mut database = usvg::fontdb::Database::new();
+            database.load_system_fonts();
+            Arc::new(database)
+        })
+        .clone()
+}
+
+fn svg_options() -> usvg::Options<'static> {
+    usvg::Options {
+        fontdb: font_database(),
+        ..usvg::Options::default()
+    }
+}
+
+/// Draw `region` (`x, y, width, height` of the SVG's own coordinates; `None` for all of it)
+/// at `scale`, and encode it as a PNG.
+fn rasterize(
+    svg: &str,
+    region: Option<(f64, f64, f64, f64)>,
+    scale: f32,
+) -> Result<Vec<u8>, ExportError> {
     if !scale.is_finite() || scale <= 0.0 {
         return Err(ExportError::BadScale(scale.to_string()));
     }
-    let tree = usvg::Tree::from_str(svg, &usvg::Options::default())
+    let tree = usvg::Tree::from_str(svg, &svg_options())
         .map_err(|error| ExportError::Parse(error.to_string()))?;
     let size = tree.size();
+    let (x, y, width, height) =
+        region.unwrap_or((0.0, 0.0, f64::from(size.width()), f64::from(size.height())));
     let (w, h) = (
-        (f64::from(size.width()) * f64::from(scale)).round(),
-        (f64::from(size.height()) * f64::from(scale)).round(),
+        (width * f64::from(scale)).round(),
+        (height * f64::from(scale)).round(),
     );
     let max = f64::from(MAX_SIDE);
     if !(1.0..=max).contains(&w) || !(1.0..=max).contains(&h) {
@@ -57,14 +84,31 @@ pub fn svg_to_png(svg: &str, scale: f32) -> Result<Vec<u8>, ExportError> {
         width: w as u64,
         height: h as u64,
     })?;
-    resvg::render(
-        &tree,
-        tiny_skia::Transform::from_scale(scale, scale),
-        &mut pixmap.as_mut(),
-    );
+    let transform =
+        tiny_skia::Transform::from_scale(scale, scale).pre_translate(-(x as f32), -(y as f32));
+    resvg::render(&tree, transform, &mut pixmap.as_mut());
     pixmap
         .encode_png()
         .map_err(|error| ExportError::Encode(error.to_string()))
+}
+
+/// Rasterize SVG text to a PNG at the given scale (1.0 keeps the SVG's size).
+/// Text is drawn with the system fonts.
+pub fn svg_to_png(svg: &str, scale: f32) -> Result<Vec<u8>, ExportError> {
+    rasterize(svg, None, scale)
+}
+
+/// Rasterize only a rectangle of the SVG (`x`, `y`, `width`, `height` in its own
+/// coordinates), zoomed by `scale`. For close-up review pictures.
+pub fn svg_to_png_region(
+    svg: &str,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    scale: f32,
+) -> Result<Vec<u8>, ExportError> {
+    rasterize(svg, Some((x, y, width, height)), scale)
 }
 
 /// The output file type.
@@ -105,9 +149,18 @@ pub struct RenderRequest<'a> {
     pub format: Format,
     pub scale: f32,
     pub grain: bool,
-    /// Draw only the sky (the sky is all there is until Milestone 5).
-    pub background_only: bool,
     pub options: &'a Options,
+}
+
+/// The finished sky as SVG text.
+pub fn render_svg(activity: &Activity, options: &Options, grain: bool) -> Result<String, SkyError> {
+    let (model, layout) = plan_sky(activity, options)?;
+    let theme = Theme::for_name(options.theme);
+    let art = ArtOptions {
+        grain: grain || options.paper_grain,
+        ..ArtOptions::default()
+    };
+    Ok(sky_svg(&model, &layout, &theme, &art, options.labels))
 }
 
 /// Make the picture in memory: SVG text, or a PNG of it.
@@ -118,13 +171,7 @@ pub fn render_bytes(
     scale: f32,
     grain: bool,
 ) -> Result<Vec<u8>, SkyError> {
-    let model = build_sky(activity, options)?;
-    let theme = Theme::for_name(options.theme);
-    let art = ArtOptions {
-        grain: grain || options.paper_grain,
-        ..ArtOptions::default()
-    };
-    let svg = background_svg(&model, &theme, &art, &[]);
+    let svg = render_svg(activity, options, grain)?;
     match format {
         Format::Svg => Ok(svg.into_bytes()),
         Format::Png => Ok(svg_to_png(&svg, scale)?),
@@ -133,12 +180,6 @@ pub fn render_bytes(
 
 /// Read the activity file, render, write the result. Returns where it went.
 pub fn render_file(request: &RenderRequest) -> Result<PathBuf, SkyError> {
-    if !request.background_only {
-        return Err(SkyError::Render(
-            "only the sky is drawn so far; add --background-only (stars arrive in Milestone 5)"
-                .to_string(),
-        ));
-    }
     let text = std::fs::read_to_string(request.from_file).map_err(|e| {
         SkyError::Export(format!(
             "could not read {}: {e}",
