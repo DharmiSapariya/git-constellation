@@ -6,8 +6,10 @@ pub mod labels;
 pub mod lines;
 pub mod milkyway;
 pub mod moon;
+pub mod nebula;
 pub mod shooting;
 pub mod sprites;
+pub mod star_parts;
 pub mod stars;
 
 use crate::layout::anchors::SeededRng;
