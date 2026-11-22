@@ -4,8 +4,7 @@ use super::{Check, check};
 use crate::SkyError;
 use crate::layout::labels::WIDE_HALO;
 use crate::layout::{
-    CANVAS_HEIGHT, CANVAS_WIDTH, COVERAGE_HEIGHT, COVERAGE_WIDTH, Layout, coverage_points, dist,
-    star_radius,
+    CANVAS_HEIGHT, CANVAS_WIDTH, Layout, coverage_points, dist, sparse::coverage_for, star_radius,
 };
 use crate::model::{LanguageKey, Point, SkyModel};
 use crate::theme::{Rgb, luma};
@@ -27,14 +26,16 @@ fn radii(model: &SkyModel) -> Vec<f64> {
 
 /// All soft checks, in report order.
 pub fn checks(model: &SkyModel, layout: &Layout) -> Vec<Check> {
-    vec![
-        coverage(layout),
+    let mut all = vec![
+        coverage(model, layout),
         nearest_neighbor(layout),
         hues(model),
         empty_rect(model, layout),
         constellation_gap(layout),
         labels_left_out(layout),
-    ]
+    ];
+    all.extend(super::composition::checks(model, layout));
+    all
 }
 
 /// Width and height of the box around some points (none for fewer than two).
@@ -50,22 +51,22 @@ fn extent(points: &[Point]) -> Option<(f64, f64)> {
     Some((spread(|p| p.0), spread(|p| p.1)))
 }
 
-fn coverage(layout: &Layout) -> Check {
+fn coverage(model: &SkyModel, layout: &Layout) -> Check {
+    let (cover_w, cover_h, _) = coverage_for(model.stars.len());
     let name = "coverage of the constellations' bounding box";
     let Some((w, h)) = extent(&coverage_points(layout)) else {
         return check(name, true, "fewer than two stars, not measured".to_string());
     };
     let (wf, hf) = (w / CANVAS_WIDTH, h / CANVAS_HEIGHT);
-    let ok = (COVERAGE_WIDTH.0..=COVERAGE_WIDTH.1).contains(&wf)
-        && (COVERAGE_HEIGHT.0..=COVERAGE_HEIGHT.1).contains(&hf);
+    let ok = (cover_w.0..=cover_w.1).contains(&wf) && (cover_h.0..=cover_h.1).contains(&hf);
     let detail = format!(
         "{:.0}% of width (want {:.0}-{:.0}%), {:.0}% of height (want {:.0}-{:.0}%)",
         wf * 100.0,
-        COVERAGE_WIDTH.0 * 100.0,
-        COVERAGE_WIDTH.1 * 100.0,
+        cover_w.0 * 100.0,
+        cover_w.1 * 100.0,
         hf * 100.0,
-        COVERAGE_HEIGHT.0 * 100.0,
-        COVERAGE_HEIGHT.1 * 100.0
+        cover_h.0 * 100.0,
+        cover_h.1 * 100.0
     );
     check(name, ok, detail)
 }

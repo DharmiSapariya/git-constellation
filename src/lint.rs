@@ -3,11 +3,15 @@
 //! Hard checks must pass. Soft checks report warnings with numbers. Checks
 //! that need drawn output (contrast, file size, luminance) arrive with the art.
 
+mod composition;
 mod report;
+mod rings;
 mod sky;
 mod soft;
 
+pub use composition::{Composition, measure as measure_composition};
 pub use report::{Check, LintReport};
+pub use rings::{flare_boxes, ring_flare_checks, ring_radius};
 pub use sky::{
     DrawnChecks, MAX_SVG_BYTES, MIN_TEXT_CONTRAST, SOFT_SVG_BYTES, VISIBILITY_BIG_TIER,
     VISIBILITY_MARGIN, VISIBILITY_RING, Visibility, drawn_checks, has_non_finite_number,

@@ -7,7 +7,7 @@ use crate::SkyError;
 use crate::art::labels::{drawn_labels, label_style};
 use crate::art::{ArtOptions, sky_svg_with_stats, sky_svg_without_text};
 use crate::export::svg_to_png;
-use crate::layout::{Layout, Rect};
+use crate::layout::{Layout, Rect, star_radius};
 use crate::model::{LabelMode, SkyModel};
 use crate::theme::{Rgb, Theme, contrast_ratio, luma, parse_hex};
 
@@ -232,9 +232,9 @@ fn median(values: &mut [f64]) -> Option<f64> {
     Some(values[values.len() / 2])
 }
 
-/// The star-visibility measurement on a rendered PNG (scale 1): the brightest pixel
-/// of the 3 by 3 block at each star (the darkest on light themes) against the median
-/// luma of a ring 30 to 40 px out.
+/// The star-visibility measurement on a rendered PNG (scale 1): the brightest pixel of the 3 by 3
+/// block at each star on dark themes, or the darkest pixel of its body disc on light themes,
+/// against the median luma of a ring 30 to 40 px out.
 pub fn star_visibility(
     png: &[u8],
     model: &SkyModel,
@@ -260,11 +260,21 @@ pub fn star_visibility(
         (0usize, 0usize, 0usize, 0usize);
     for (star, position) in model.stars.iter().zip(&layout.positions) {
         let (cx, cy) = (position.0.round() as i64, position.1.round() as i64);
+        // Dark skies: the star's hot center is a few pixels wide, so its 3 x 3 block is
+        // sampled. Paper: the center is a pale core, and what makes a star visible is its inked
+        // body, so the whole body disc is sampled.
+        let sample = if dark {
+            1
+        } else {
+            (star_radius(star.tier).ceil() as i64).max(1)
+        };
         let mut block = Vec::new();
-        for dy in -1..=1 {
-            for dx in -1..=1 {
-                if let Some(v) = luma_at(cx + dx, cy + dy) {
-                    block.push(v);
+        for dy in -sample..=sample {
+            for dx in -sample..=sample {
+                if dark || dx * dx + dy * dy <= sample * sample {
+                    if let Some(v) = luma_at(cx + dx, cy + dy) {
+                        block.push(v);
+                    }
                 }
             }
         }
@@ -324,6 +334,7 @@ pub fn drawn_checks(
 ) -> Result<DrawnChecks, SkyError> {
     let (svg, skipped) = sky_svg_with_stats(model, layout, theme, art, mode);
     let mut hard = svg_hard_checks(&svg);
+    hard.extend(super::ring_flare_checks(&svg, model, layout, mode));
     hard.push(text_contrast_check(model, layout, theme, art, mode)?);
 
     let png = svg_to_png(&svg, 1.0)?;

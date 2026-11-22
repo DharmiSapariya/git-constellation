@@ -121,6 +121,12 @@ fn the_drawn_sky_checks_run_on_every_theme() {
             for check in &report.hard {
                 assert!(check.passed, "{what}: {} {}", check.name, check.detail);
             }
+            for wanted in ["labels clear of rings", "flares clear of labels"] {
+                assert!(
+                    report.hard.iter().any(|c| c.name == wanted),
+                    "{what}: no {wanted} check"
+                );
+            }
             println!("{what}");
             for check in &report.soft {
                 println!(

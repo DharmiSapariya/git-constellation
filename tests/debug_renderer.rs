@@ -7,7 +7,6 @@ use std::path::PathBuf;
 use common::{FIXTURES, load_fixture};
 use git_constellation::export::svg_to_png;
 use git_constellation::layout::debug::debug_svg;
-use git_constellation::lint::lint;
 use git_constellation::model::LabelMode;
 use git_constellation::{Layout, Options, SkyModel, plan_sky};
 
@@ -167,31 +166,15 @@ fn previews_for_every_fixture_can_be_written() {
     }
 }
 
-/// Regenerate the review pictures and linter reports in docs/preview:
-/// `cargo test --test debug_renderer -- --ignored`
+/// Regenerate the layout debug pictures into the review folder (`target/previews`, or
+/// `PREVIEW_DIR`): `cargo test --test debug_renderer -- --ignored`
 #[test]
-#[ignore = "writes files into docs/preview"]
-fn regenerate_docs_previews() {
-    let folder = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("docs")
-        .join("preview");
-    std::fs::create_dir_all(&folder).unwrap();
-    let mut combined = String::new();
+#[ignore = "writes files into the review folder"]
+fn regenerate_debug_previews() {
+    let folder = common::review_dir();
     for name in FIXTURES {
         let (model, layout) = planned(name);
         let png = svg_to_png(&debug_svg(&model, &layout), 1.0).unwrap();
         std::fs::write(folder.join(format!("debug-{name}.png")), png).unwrap();
-        let report = lint(&model, &layout);
-        combined.push_str(&format!(
-            "=== {name}: {} stars, {} constellations, {} loose, layout try #{}, scale {:.2}{}\n{}\n",
-            model.stars.len(),
-            layout.constellations.len(),
-            layout.wanderers.len(),
-            layout.attempt + 1,
-            layout.scale,
-            layout.star_cap.map_or(String::new(), |c| format!(", star cap lowered to {c}")),
-            report.to_text()
-        ));
     }
-    std::fs::write(folder.join("lint-report.txt"), combined).unwrap();
 }
