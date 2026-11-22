@@ -159,7 +159,7 @@ fn compose(
         background::draw_grain(&mut b, model.seed);
     }
     let skipped = lines::draw_lines(&mut b, theme, model, layout);
-    stars::draw_stars(&mut b, theme, model, &layout.positions);
+    stars::draw_stars(&mut b, theme, model, &layout.positions, &rects);
     if with_text {
         labels::draw_labels(&mut b, theme, &layout.labels, labels);
         hud::draw_hud(&mut b, theme, model);
