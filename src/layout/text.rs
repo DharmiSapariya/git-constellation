@@ -3,7 +3,8 @@
 /// Font sizes in pixels (2.5).
 pub const CONSTELLATION_FONT: f64 = 11.0;
 pub const REPO_FONT: f64 = 10.5;
-pub const SMALL_FONT: f64 = 9.0;
+/// The "first light" note: as large as repo names (9 px was under the 10 px readability floor).
+pub const SMALL_FONT: f64 = 10.5;
 /// Average glyph width as a share of font size, deliberately a little high.
 pub const WIDTH_NORMAL: f64 = 0.56;
 pub const WIDTH_UPPERCASE: f64 = 0.62;

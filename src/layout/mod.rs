@@ -10,7 +10,10 @@ pub mod geometry;
 pub mod labels;
 pub mod lines;
 pub mod shape;
+pub mod sparse;
 pub mod text;
+
+mod fitting;
 
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +24,7 @@ use crate::config::Options;
 use crate::lint;
 use crate::model::{LabelMode, Point, SkyModel};
 use anchors::SeededRng;
+use fitting::fit;
 use labels::Label;
 use shape::Placement;
 
@@ -203,6 +207,11 @@ fn grown_layout(
             anchor,
             base_radius,
             &mut rng,
+            if small_sky {
+                sparse::SMALL_SKY_STEP_MULT
+            } else {
+                1.0
+            },
         );
         let locked: Vec<usize> = grown
             .placed
@@ -322,75 +331,4 @@ fn transformed(layout: &Layout, scale: f64, shift: Point) -> Layout {
     }
     next.scale = layout.scale * scale;
     next
-}
-
-/// A fit move is acceptable when the geometry rules still hold and every star
-/// is still inside the padded star area (not just the bare 40 px margin).
-fn fit_ok(model: &SkyModel, layout: &Layout) -> bool {
-    layout.positions.iter().all(|&p| star_area().contains(p))
-        && lint::geometry_failures(model, layout).is_empty()
-}
-
-/// Scale the layout toward the coverage range, then nudge it toward balance.
-/// Every change is re-validated; if a change breaks a rule, a smaller change
-/// (or none) is used.
-fn fit(model: &SkyModel, layout: Layout) -> Layout {
-    let mut current = layout;
-    if let Some(bounds) = bounding_box(&coverage_points(&current)) {
-        let (w, h) = (bounds.width().max(1.0), bounds.height().max(1.0));
-        let too_small =
-            w < COVERAGE_WIDTH.0 * CANVAS_WIDTH || h < COVERAGE_HEIGHT.0 * CANVAS_HEIGHT;
-        let too_big = w > COVERAGE_WIDTH.1 * CANVAS_WIDTH || h > COVERAGE_HEIGHT.1 * CANVAS_HEIGHT;
-        let wanted = if too_small && !too_big {
-            Some(
-                (COVERAGE_WIDTH.0 * CANVAS_WIDTH / w)
-                    .max(COVERAGE_HEIGHT.0 * CANVAS_HEIGHT / h)
-                    .min(MAX_SCALE_UP),
-            )
-        } else if too_big && !too_small {
-            Some(
-                (COVERAGE_WIDTH.1 * CANVAS_WIDTH / w)
-                    .min(COVERAGE_HEIGHT.1 * CANVAS_HEIGHT / h)
-                    .max(MIN_SCALE_DOWN),
-            )
-        } else {
-            None
-        };
-        if let Some(wanted) = wanted {
-            for step in 0..FIT_STEPS {
-                let share = 1.0 - step as f64 / FIT_STEPS as f64;
-                let candidate = transformed(&current, 1.0 + (wanted - 1.0) * share, (0.0, 0.0));
-                if fit_ok(model, &candidate) {
-                    current = candidate;
-                    break;
-                }
-            }
-        }
-    }
-
-    if let Some(c) = centroid(&current.positions) {
-        let pull = |offset: f64, tolerance: f64| {
-            let excess = offset.abs() - NUDGE_TARGET_SHARE * tolerance;
-            if excess > 0.0 {
-                -offset.signum() * excess
-            } else {
-                0.0
-            }
-        };
-        let want = (
-            pull(c.0 - CANVAS_WIDTH / 2.0, BALANCE_X_TOLERANCE * CANVAS_WIDTH),
-            pull(
-                c.1 - CANVAS_HEIGHT / 2.0,
-                BALANCE_Y_TOLERANCE * CANVAS_HEIGHT,
-            ),
-        );
-        for share in [1.0, 0.75, 0.5, 0.25] {
-            let candidate = transformed(&current, 1.0, (want.0 * share, want.1 * share));
-            if fit_ok(model, &candidate) {
-                current = candidate;
-                break;
-            }
-        }
-    }
-    current
 }

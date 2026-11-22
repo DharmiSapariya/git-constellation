@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 
 pub use super::text::*;
 
-use super::{Layout, Rect, Region, dist, safe_rect, segment_hits_rect, star_radius};
+use super::{
+    FOUNDING_RING, FRESH_RING, Layout, Rect, Region, dist, safe_rect, segment_hits_rect,
+    star_radius,
+};
 use crate::model::{LabelMode, Point, SkyModel, Tier};
 
 /// Gap between a star's edge and its label.
@@ -18,8 +21,6 @@ pub const SEARCH_RADIUS: f64 = 260.0;
 /// Star glow radii as multiples of the star radius: tight (a hard no-go) and wide (preferred clear).
 pub const TIGHT_HALO: f64 = 1.8;
 pub const WIDE_HALO: f64 = 3.4;
-/// The founding star's ring (2.3) is `2.6 * r` wide.
-pub const FOUNDING_RING: f64 = 2.6;
 pub const CAPTION: &str = "a young sky";
 pub const FIRST_LIGHT: &str = "first light";
 
@@ -86,6 +87,8 @@ impl Obstacles {
             let r = star_radius(star.tier);
             let hard = if star.founding {
                 FOUNDING_RING * r + 1.0
+            } else if star.fresh && !star.dormant {
+                FRESH_RING * r + 1.0
             } else {
                 TIGHT_HALO * r
             };

@@ -98,6 +98,7 @@ pub fn grow(
     anchor: Point,
     base_radius: f64,
     rng: &mut SeededRng,
+    step_mult: f64,
 ) -> Grown {
     let mut grown = Grown {
         placed: Vec::new(),
@@ -125,7 +126,7 @@ pub fn grow(
         let mut enlargements = 0;
         loop {
             if let Some((p, angle)) =
-                best_candidate(placement, star, &grown, &incoming, anchor, rng)
+                best_candidate(placement, star, &grown, &incoming, anchor, rng, step_mult)
             {
                 placement.positions[star] = Some(p);
                 grown.placed.push(star);
@@ -168,6 +169,7 @@ fn best_candidate(
     incoming: &[f64],
     anchor: Point,
     rng: &mut SeededRng,
+    step_mult: f64,
 ) -> Option<(Point, f64)> {
     let n = grown.placed.len();
     let roll = rng.unit();
@@ -187,7 +189,7 @@ fn best_candidate(
     for _ in 0..WALK_CANDIDATES {
         // Draw both numbers every time so the random stream stays in step.
         let turn = (rng.normal() * TURN_SIGMA_DEG.to_radians()).clamp(-turn_limit, turn_limit);
-        let step = STEP_MIN + STEP_SPAN * rng.unit();
+        let step = (STEP_MIN + STEP_SPAN * rng.unit()) * step_mult;
         let angle = incoming[parent_slot] + turn;
         let p = (parent.0 + step * angle.cos(), parent.1 + step * angle.sin());
         if dist(p, anchor) > grown.radius || !placement.position_ok(star, p) {

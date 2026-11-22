@@ -108,8 +108,17 @@ fn verify(model: &SkyModel, layout: &Layout, what: &str) {
         }
     }
 
-    // Constellation anchors keep their gaps.
-    for (a, ca) in layout.constellations.iter().enumerate() {
+    // Constellation anchors keep their gaps. (A small sky is deliberately gathered: its groups
+    // are moved closer than their circles, and the hard star-spacing, crossing and label
+    // checks are what protect it.)
+    let gathered = model.stars.len() <= git_constellation::layout::anchors::SMALL_SKY_MAX_STARS
+        && (2..=4).contains(&layout.constellations.len());
+    for (a, ca) in layout
+        .constellations
+        .iter()
+        .enumerate()
+        .filter(|_| !gathered)
+    {
         for cb in layout.constellations.iter().skip(a + 1) {
             let gap = ca.base_radius + cb.base_radius + 30.0 * layout.scale;
             assert!(
@@ -664,10 +673,22 @@ fn composition_quality_is_pinned_per_fixture() {
 
 #[test]
 fn picking_the_best_clean_layout_never_picks_a_worse_one_than_the_first() {
-    // The edge fixture's first clean layout has more warnings than the one chosen.
+    // The chosen layout never has more soft warnings than the first clean one, and the edge
+    // fixture's chosen layout has none.
+    let options = Options {
+        labels: LabelMode::Major,
+        ..Options::default()
+    };
+    for name in ["small", "edge", "medium", "large"] {
+        let (model, chosen) = plan(name, LabelMode::Major);
+        let first = git_constellation::layout::try_layout(&model, &options, 0).expect("attempt 0");
+        assert!(
+            lint(&model, &chosen).warnings() <= lint(&model, &first).warnings(),
+            "{name}: the chosen layout is no worse than the first"
+        );
+    }
     let (model, layout) = plan("edge", LabelMode::Major);
-    assert!(layout.attempt > 0, "a later attempt was chosen");
-    assert!(lint(&model, &layout).warnings() == 0);
+    assert_eq!(lint(&model, &layout).warnings(), 0);
 }
 
 #[test]

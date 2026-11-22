@@ -42,6 +42,12 @@ pub fn dist(a: Point, b: Point) -> f64 {
     ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt()
 }
 
+/// How wide a star's rings are, in star radii. The art draws the rings at these radii and the
+/// layout keeps labels outside them, so this is the one place they are defined.
+/// The founding star's ring is solid; a fresh star's ring is dotted.
+pub const FOUNDING_RING: f64 = 3.0;
+pub const FRESH_RING: f64 = 2.5;
+
 pub fn star_radius(tier: Tier) -> f64 {
     STAR_RADII[usize::from(tier.number()) - 1]
 }

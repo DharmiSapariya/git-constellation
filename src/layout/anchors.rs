@@ -25,19 +25,9 @@ pub const ANCHOR_RESERVED_PAD: f64 = 0.4;
 /// ...and this share of its radius away from the safe-area edge.
 pub const ANCHOR_EDGE_PAD: f64 = 0.5;
 
-/// Skies with at most this many stars get staggered, hand-composed anchor slots
-/// instead of random ones (random placement is a lottery with so few groups).
-pub const SMALL_SKY_MAX_STARS: usize = 16;
-/// Slots exist for 1 to 4 constellations (as shares of width and height),
-/// brightest first, zig-zagging high and low so the sky gets vertical spread.
-pub const SMALL_SKY_SLOTS: [&[(f64, f64)]; 4] = [
-    &[(0.38, 0.50)],
-    &[(0.28, 0.36), (0.72, 0.66)],
-    &[(0.26, 0.38), (0.50, 0.68), (0.76, 0.36)],
-    &[(0.26, 0.40), (0.45, 0.68), (0.64, 0.36), (0.84, 0.66)],
-];
-/// Each slot is nudged by up to this many pixels, so seeds still differ.
-pub const SMALL_SKY_JITTER: f64 = 30.0;
+pub use super::sparse::{
+    SMALL_SKY_ANCHOR_GAP, SMALL_SKY_JITTER, SMALL_SKY_MAX_STARS, SMALL_SKY_SLOTS,
+};
 
 /// A small seeded random stream. Every layer of the layout gets its own
 /// stream, so adding randomness in one layer never shifts another (4.9).
@@ -109,17 +99,23 @@ pub fn place_anchors(
     let offset = 1 + fnv1a_64(&salt) % 4096;
 
     let base: Vec<f64> = sizes.iter().map(|&n| radius_estimate(n)).collect();
-    for shrink in 0..=ANCHOR_SHRINK_TRIES {
-        let radii: Vec<f64> = base
-            .iter()
+    let shrunk = |shrink: i32| -> Vec<f64> {
+        base.iter()
             .map(|r| r * ANCHOR_SHRINK.powi(shrink))
-            .collect();
-        let slotted = if small_sky {
-            slot_place(&radii, seed, attempt, regions)
-        } else {
-            None
-        };
-        if let Some(anchors) = slotted.or_else(|| try_place(&radii, offset, regions)) {
+            .collect()
+    };
+    // A small sky tries its composed slots at every size first: three or four groups only fit
+    // the slots a little smaller, and a random placement that fits at full size would
+    // scatter them across the canvas.
+    if small_sky {
+        for shrink in 0..=ANCHOR_SHRINK_TRIES {
+            if let Some(anchors) = slot_place(&shrunk(shrink), seed, attempt, regions) {
+                return Ok(anchors);
+            }
+        }
+    }
+    for shrink in 0..=ANCHOR_SHRINK_TRIES {
+        if let Some(anchors) = try_place(&shrunk(shrink), offset, regions) {
             return Ok(anchors);
         }
     }
@@ -149,9 +145,9 @@ fn slot_place(
         let clear = !regions
             .iter()
             .any(|r| r.blocks_point(point, ANCHOR_RESERVED_PAD * radius));
-        let apart = accepted
-            .iter()
-            .all(|&(other, other_radius)| dist(point, other) >= radius + other_radius + ANCHOR_GAP);
+        let apart = accepted.iter().all(|&(other, other_radius)| {
+            dist(point, other) >= radius + other_radius + SMALL_SKY_ANCHOR_GAP
+        });
         if !(inside && clear && apart) {
             return None;
         }
