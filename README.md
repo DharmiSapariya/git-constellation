@@ -6,8 +6,8 @@
 
 # git-constellation
 
-*Every repo is a star. Every language is a constellation.*<br>
-*Every commit makes the sky a little brighter.*
+*Your GitHub history isn't a list of repositories. It's a universe you've been building, one commit at a time..*<br>
+
 
 <sub>A Rust CLI that draws your GitHub profile as a night sky. Work in progress, and honest about it.</sub>
 
