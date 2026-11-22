@@ -8,7 +8,7 @@ use git_constellation::art::lines::{
     LINE_SPINE_BOOST, line_gap, line_style, trimmed_segment,
 };
 use git_constellation::art::{ArtOptions, sky_svg, sky_svg_with_stats};
-use git_constellation::layout::geometry::{dist, star_radius};
+use git_constellation::layout::geometry::{FOUNDING_RING, dist, star_radius};
 use git_constellation::model::{LabelMode, ThemeName, Tier};
 use git_constellation::theme::Theme;
 
@@ -36,7 +36,12 @@ fn the_gap_is_wider_at_the_founding_star() {
     star.founding = false;
     assert!((line_gap(&star) - LINE_GAP_MULT * 8.6).abs() < 1e-9);
     star.founding = true;
+    assert!((line_gap(&star) - 3.3 * 8.6).abs() < 1e-9);
     assert!((line_gap(&star) - LINE_GAP_FOUNDING_MULT * 8.6).abs() < 1e-9);
+    assert!(
+        line_gap(&star) > FOUNDING_RING * 8.6,
+        "lines stop outside the ring"
+    );
 }
 
 #[test]
@@ -174,9 +179,36 @@ fn drawn_edges_end_outside_every_ring() {
                 assert!(dist(from, pa) >= line_gap(a) - 1e-9);
                 assert!(dist(to, pb) >= line_gap(b) - 1e-9);
                 if a.founding {
-                    assert!(dist(from, pa) >= 2.8 * star_radius(a.tier) - 1e-9);
+                    assert!(dist(from, pa) >= 3.3 * star_radius(a.tier) - 1e-9);
+                    assert!(dist(from, pa) > FOUNDING_RING * star_radius(a.tier));
+                }
+                if b.founding {
+                    assert!(dist(to, pb) >= 3.3 * star_radius(b.tier) - 1e-9);
                 }
             }
+        }
+    }
+}
+
+#[test]
+fn no_line_is_too_short_to_draw_on_any_fixture() {
+    // The wider founding gap (3.3 r) must not swallow a short edge at the founding star.
+    for name in THEME_NAMES {
+        let options = options_for(name);
+        let theme = Theme::for_name(name);
+        for fixture in common::FIXTURES {
+            let (model, layout) = planned(fixture, &options);
+            let (_, skipped) = sky_svg_with_stats(
+                &model,
+                &layout,
+                &theme,
+                &ArtOptions::default(),
+                LabelMode::Major,
+            );
+            assert_eq!(
+                skipped, 0,
+                "{name:?} {fixture}: {skipped} edges skipped as too short"
+            );
         }
     }
 }

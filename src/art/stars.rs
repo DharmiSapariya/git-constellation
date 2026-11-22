@@ -2,13 +2,13 @@
 
 use std::collections::BTreeMap;
 
-use crate::layout::geometry::star_radius;
+use crate::layout::geometry::{Rect, star_radius};
 use crate::model::{Point, SkyModel, Star};
 use crate::svg::{self, Stop, SvgBuilder, Units, fmt};
 use crate::theme::{Rgb, Theme, mix, parse_hex};
 
 use super::layer_rng;
-use super::star_parts::{body_markup, flare_gradient, flare_markup, ring_markup, wants_flare};
+use super::star_parts::{body_markup, flare_gradient, wants_flare};
 
 // The flare, ring, borrowed and paper constants live next to the code that uses them.
 pub use super::star_parts::*;
@@ -36,6 +36,12 @@ pub const DORMANT_TINT_MIX: f64 = 0.45;
 pub const WASH_MULT: f64 = 2.4;
 pub const WASH_OPACITY: f64 = 0.28;
 pub const PAPER_BODY_DARKEN: f64 = 0.18;
+/// Paper: the smallest stars (tier 1 and 2) are inked darker so pale colors stay readable.
+pub const PAPER_SMALL_BODY_DARKEN: f64 = 0.30;
+/// Paper: a dormant star is a grayed ink (this share toward the ink color), not a pale tint.
+pub const PAPER_DORMANT_INK_MIX: f64 = 0.60;
+/// The largest tier number that counts as "small" for paper inking.
+pub const PAPER_SMALL_MAX_TIER: u8 = 2;
 
 /// The colors one star is drawn with.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,13 +63,26 @@ fn parse(hex: &str) -> Rgb {
 /// The effective colors of a star in a theme.
 pub fn star_palette(theme: &Theme, star: &Star) -> StarPalette {
     let mut glow = parse(theme.star_color(star.language));
+    if !theme.is_dark && star.dormant {
+        // Paper: a dormant star is grayed ink, which stays readable on cream.
+        let gray = mix(glow, parse(theme.ink), PAPER_DORMANT_INK_MIX).to_hex();
+        return StarPalette {
+            glow: gray.clone(),
+            body: gray,
+        };
+    }
     if star.dormant {
         glow = mix(glow, parse(DORMANT_TINT), DORMANT_TINT_MIX);
     }
     let body = if theme.is_dark {
         glow
     } else {
-        mix(glow, parse(theme.ink), PAPER_BODY_DARKEN)
+        let darken = if star.tier.number() <= PAPER_SMALL_MAX_TIER {
+            PAPER_SMALL_BODY_DARKEN
+        } else {
+            PAPER_BODY_DARKEN
+        };
+        mix(glow, parse(theme.ink), darken)
     };
     StarPalette {
         glow: glow.to_hex(),
@@ -144,18 +163,25 @@ pub(super) fn body_gradient(b: &mut SvgBuilder, cache: &mut GradientCache, color
     id
 }
 
+/// What every star in the layer is drawn against: the theme, the shared flare gradient
+/// (if any star needs one) and the label boxes that flares must stop short of.
+struct Scene<'a> {
+    theme: &'a Theme,
+    flare_id: Option<&'a str>,
+    labels: &'a [Rect],
+}
+
 /// Everything for one star, as one `<g id="star-N">`.
-#[allow(clippy::too_many_arguments)]
 fn star_group(
     b: &mut SvgBuilder,
     cache: &mut GradientCache,
-    theme: &Theme,
+    scene: &Scene,
     star: &Star,
     index: usize,
     at: Point,
     rotation: f64,
-    flare_id: Option<&str>,
 ) -> String {
+    let theme = scene.theme;
     let (x, y) = at;
     let r = star_radius(star.tier);
     let palette = star_palette(theme, star);
@@ -201,7 +227,13 @@ fn star_group(
         ));
     }
 
-    // 2 and 3. Body and core (dimmed together when dormant).
+    // 2 and 3. Body and core (dimmed together when dormant), and 4. the flare of a calm tier 5
+    // star. The glowing flare of dark themes sits on top of the body; the inked strokes of paper
+    // sit behind it, so they show as whiskers instead of a crosshair over the body.
+    let flare = flare_markup(theme, star, at, scene.flare_id, scene.labels);
+    if !theme.is_dark {
+        inner.push_str(&flare);
+    }
     let body = body_markup(b, cache, theme, star, at, rotation, &palette);
     if star.dormant {
         inner.push_str(&svg::tag(
@@ -212,26 +244,40 @@ fn star_group(
     } else {
         inner.push_str(&body);
     }
+    if theme.is_dark {
+        inner.push_str(&flare);
+    }
 
-    // 4. Flare of the calm tier 5 stars, then 5 and 6. Rings.
-    inner.push_str(&flare_markup(theme, star, at, flare_id));
+    // 5 and 6. Rings.
     inner.push_str(&ring_markup(theme, star, at, &palette));
     svg::tag("g", &[("id", format!("star-{index}"))], Some(&inner))
 }
 
-/// Draw the `stars` layer. `positions[i]` belongs to `model.stars[i]`.
-pub fn draw_stars(b: &mut SvgBuilder, theme: &Theme, model: &SkyModel, positions: &[Point]) {
+/// Draw the `stars` layer. `positions[i]` belongs to `model.stars[i]`; `labels` are the
+/// label boxes that are drawn (flares stop short of them).
+pub fn draw_stars(
+    b: &mut SvgBuilder,
+    theme: &Theme,
+    model: &SkyModel,
+    positions: &[Point],
+    labels: &[Rect],
+) {
     let turns = rotations(model.seed, model.stars.len());
     let mut cache = GradientCache::new();
     let needs_flare = theme.is_dark && model.stars.iter().any(wants_flare);
     let flare_id = needs_flare.then(|| flare_gradient(b));
+    let scene = Scene {
+        theme,
+        flare_id: flare_id.as_deref(),
+        labels,
+    };
     b.group(&[("id", "stars".to_string())], |g| {
         for (i, star) in model.stars.iter().enumerate() {
             let Some(&at) = positions.get(i) else {
                 continue;
             };
             let turn = turns.get(i).copied().unwrap_or(0.0);
-            let markup = star_group(g, &mut cache, theme, star, i, at, turn, flare_id.as_deref());
+            let markup = star_group(g, &mut cache, &scene, star, i, at, turn);
             g.add(&markup);
         }
     });

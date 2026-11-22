@@ -1,15 +1,19 @@
 //! Constellation lines: faint threads between stars, stopping short of every star and ring.
 
 use crate::layout::Layout;
-use crate::layout::geometry::{dist, star_radius};
+use crate::layout::geometry::{FOUNDING_RING, dist, star_radius};
 use crate::model::{Point, SkyModel, Star, Tier};
 use crate::svg::{self, SvgBuilder, escape, fmt};
 use crate::theme::Theme;
 
-/// A line stops this many star radii from a star's center (a bit more at the founding star,
-/// whose ring sits at 2.6 radii).
+/// A line stops this many star radii from a star's center, and a bit more at the founding star,
+/// whose ring sits at `FOUNDING_RING` radii.
 pub const LINE_GAP_MULT: f64 = 2.4;
-pub const LINE_GAP_FOUNDING_MULT: f64 = 2.8;
+pub const LINE_GAP_FOUNDING_MULT: f64 = 3.3;
+const _: () = assert!(
+    LINE_GAP_FOUNDING_MULT > FOUNDING_RING,
+    "lines must stop outside the ring"
+);
 /// The soft glow under each line: width and opacity.
 pub const LINE_GLOW_WIDTH: f64 = 3.0;
 pub const LINE_GLOW_OPACITY: f64 = 0.06;
