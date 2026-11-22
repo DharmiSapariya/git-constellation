@@ -1,6 +1,7 @@
 //! Shared helpers for the integration tests (not a test file itself).
 #![allow(dead_code)] // each test file uses a different subset of these helpers
 
+use std::fmt::Write as _;
 use std::path::PathBuf;
 
 use chrono::NaiveDate;
@@ -114,4 +115,94 @@ pub fn fixture_text(name: &str) -> String {
 
 pub fn load_fixture(name: &str) -> Activity {
     Activity::from_json(&fixture_text(name)).expect("fixture should parse")
+}
+
+/// `medium.json` reduced to the repos whose primary language is one of `languages`: a small
+/// sky with (usually) one constellation per language.
+pub fn medium_with_languages(languages: &[&str]) -> Activity {
+    let mut activity = load_fixture("medium");
+    activity.repos.retain(|repo| {
+        repo.primary_language
+            .as_deref()
+            .is_some_and(|language| languages.contains(&language))
+    });
+    activity
+}
+
+/// The synthetic sparse skies used to check small-sky composition: label and language groups.
+pub const SYNTHETIC: [(&str, &[&str]); 4] = [
+    ("one-constellation", &["Rust"]),
+    ("two-constellations", &["Rust", "Python"]),
+    ("three-constellations", &["Rust", "Python", "TypeScript"]),
+    (
+        "four-constellations",
+        &["Rust", "Python", "TypeScript", "Go"],
+    ),
+];
+
+/// Where review images go: `PREVIEW_DIR` if set, otherwise `target/previews` (never committed).
+pub fn review_dir() -> PathBuf {
+    let dir = match std::env::var("PREVIEW_DIR") {
+        Ok(dir) => PathBuf::from(dir),
+        Err(_) => PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("target")
+            .join("previews"),
+    };
+    std::fs::create_dir_all(&dir).expect("review folder");
+    dir
+}
+
+/// The linter's full report for every fixture on the midnight theme: the layout checks and the
+/// checks on the drawn sky (contrast, rings, flares, star visibility, brightness).
+pub fn lint_report_text() -> String {
+    use git_constellation::art::ArtOptions;
+    use git_constellation::lint::{Check, drawn_checks, lint};
+    use git_constellation::model::{LabelMode, ThemeName};
+    use git_constellation::theme::Theme;
+
+    let list = |out: &mut String, title: &str, checks: &[Check]| {
+        let _ = writeln!(out, "{title}");
+        for c in checks {
+            let _ = writeln!(
+                out,
+                "  [{}] {}: {}",
+                if c.passed { "pass" } else { "warn" },
+                c.name,
+                c.detail
+            );
+        }
+    };
+    let mut out = String::from(
+        "Linter report: every fixture, midnight theme, default options.\n\
+         Layout checks first, then the checks on the drawn sky.\n\n",
+    );
+    let options = options_for(ThemeName::Midnight);
+    let theme = Theme::for_name(ThemeName::Midnight);
+    for fixture in FIXTURES {
+        let (model, layout) = planned(fixture, &options);
+        let _ = writeln!(
+            out,
+            "=== {fixture}: {} stars, {} constellations, {} loose, layout try #{}, scale {:.2}",
+            model.stars.len(),
+            layout.constellations.len(),
+            layout.wanderers.len(),
+            layout.attempt + 1,
+            layout.scale
+        );
+        let report = lint(&model, &layout);
+        list(&mut out, "HARD (layout)", &report.hard);
+        list(&mut out, "SOFT (layout)", &report.soft);
+        let drawn = drawn_checks(
+            &model,
+            &layout,
+            &theme,
+            &ArtOptions::default(),
+            LabelMode::Major,
+        )
+        .expect("drawn checks run");
+        list(&mut out, "HARD (drawn sky)", &drawn.hard);
+        list(&mut out, "SOFT (drawn sky)", &drawn.soft);
+        out.push('\n');
+    }
+    out
 }
