@@ -1,5 +1,8 @@
+Linter report: every fixture, midnight theme, default options.
+Layout checks first, then the checks on the drawn sky.
+
 === empty: 0 stars, 0 constellations, 0 loose, layout try #1, scale 1.00
-HARD checks (must pass)
+HARD (layout)
   [pass] every star has a position: 0 stars, 0 positions
   [pass] star spacing: fewer than two stars
   [pass] stars inside the margin and outside reserved areas: 0 stars checked
@@ -10,17 +13,33 @@ HARD checks (must pass)
   [pass] constellation names sit nearer their own stars: 0 names checked
   [pass] balance: no stars
   [pass] no NaN or infinite numbers: positions, anchors, radii, labels
-SOFT checks (warnings)
-  [ ok ] coverage of the constellations' bounding box: fewer than two stars, not measured
-  [ ok ] average nearest-neighbor distance: fewer than two stars
-  [ ok ] distinct star hues: 0 (want at most 7)
+SOFT (layout)
+  [pass] coverage of the constellations' bounding box: fewer than two stars, not measured
+  [pass] average nearest-neighbor distance: fewer than two stars
+  [pass] distinct star hues: 0 (want at most 7)
   [warn] largest star-free rectangle (stars only, dust comes later): 100% of the canvas (want under 30%)
-  [ ok ] gap between constellations: fewer than two constellations
-  [ ok ] labels left out for lack of room: 0 left out
-Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+  [pass] gap between constellations: fewer than two constellations
+  [pass] labels left out for lack of room: 0 left out
+  [pass] sparse sky: constellations close together: 0 stars: not a sparse sky
+  [pass] sparse sky: width covered: 0 stars: not a sparse sky
+HARD (drawn sky)
+  [pass] SVG size: 39221 bytes (limit 307200)
+  [pass] finite numbers: no NaN or infinity in any attribute
+  [pass] references resolve: 119 url(#id) references, 0 broken
+  [pass] ids are unique: 16 ids, 16 distinct
+  [pass] labels clear of rings: 1 labels, none touch a ring
+  [pass] flares clear of labels: 0 flare arms, none touch a label
+  [pass] text contrast: 1 labels, worst 6.38 on "a young sky" (want at least 4.5)
+SOFT (drawn sky)
+  [pass] SVG size (soft): 39221 bytes (want at most 184320)
+  [pass] constellation lines too short to draw: 0 skipped
+  [pass] labels without a clean spot: 0 dropped
+  [pass] picture brightness (gamma-encoded mean luma): 0.136 (want 0.08-0.30 for a dark theme)
+  [pass] clipped pixels: 0.00% of pixels are 253+ in every channel (want at most 4%)
+  [pass] stars stand out: 100% of 0 stars, 100% of 0 stars at tier 3+ (center 25% brighter than the ring's median)
 
 === tiny: 1 stars, 0 constellations, 1 loose, layout try #1, scale 1.00
-HARD checks (must pass)
+HARD (layout)
   [pass] every star has a position: 1 stars, 1 positions
   [pass] star spacing: fewer than two stars
   [pass] stars inside the margin and outside reserved areas: 1 stars checked
@@ -31,38 +50,70 @@ HARD checks (must pass)
   [pass] constellation names sit nearer their own stars: 0 names checked
   [pass] balance (star centroid near the center): off center by 0.0% of width (max 12%), 2.2% of height (max 15%)
   [pass] no NaN or infinite numbers: positions, anchors, radii, labels
-SOFT checks (warnings)
-  [ ok ] coverage of the constellations' bounding box: fewer than two stars, not measured
-  [ ok ] average nearest-neighbor distance: fewer than two stars
-  [ ok ] distinct star hues: 1 (want at most 7)
+SOFT (layout)
+  [pass] coverage of the constellations' bounding box: fewer than two stars, not measured
+  [pass] average nearest-neighbor distance: fewer than two stars
+  [pass] distinct star hues: 1 (want at most 7)
   [warn] largest star-free rectangle (stars only, dust comes later): 50% of the canvas (want under 30%)
-  [ ok ] gap between constellations: fewer than two constellations
-  [ ok ] labels left out for lack of room: 0 left out
-Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+  [pass] gap between constellations: fewer than two constellations
+  [pass] labels left out for lack of room: 0 left out
+  [pass] sparse sky: constellations close together: 1 stars: not a sparse sky
+  [pass] sparse sky: width covered: 1 stars: not a sparse sky
+HARD (drawn sky)
+  [pass] SVG size: 41557 bytes (limit 307200)
+  [pass] finite numbers: no NaN or infinity in any attribute
+  [pass] references resolve: 122 url(#id) references, 0 broken
+  [pass] ids are unique: 20 ids, 20 distinct
+  [pass] labels clear of rings: 2 labels, none touch a ring
+  [pass] flares clear of labels: 0 flare arms, none touch a label
+  [pass] text contrast: 2 labels, worst 6.20 on "a young sky" (want at least 4.5)
+SOFT (drawn sky)
+  [pass] SVG size (soft): 41557 bytes (want at most 184320)
+  [pass] constellation lines too short to draw: 0 skipped
+  [pass] labels without a clean spot: 0 dropped
+  [pass] picture brightness (gamma-encoded mean luma): 0.134 (want 0.08-0.30 for a dark theme)
+  [pass] clipped pixels: 0.00% of pixels are 253+ in every channel (want at most 4%)
+  [pass] stars stand out: 100% of 1 stars, 100% of 0 stars at tier 3+ (center 25% brighter than the ring's median)
 
-=== small: 6 stars, 2 constellations, 0 loose, layout try #1, scale 1.00
-HARD checks (must pass)
+=== small: 6 stars, 2 constellations, 0 loose, layout try #3, scale 1.48
+HARD (layout)
   [pass] every star has a position: 6 stars, 6 positions
-  [pass] star spacing: closest pair is flashcards and recipe-parser: 57.8px apart, needs 37.2px
+  [pass] star spacing: closest pair is weather-cli and flashcards: 133.8px apart, needs 48.4px
   [pass] stars inside the margin and outside reserved areas: 6 stars checked
   [pass] line crossings: 0 crossings among 4 lines
   [pass] loose stars clear of lines: no loose stars near lines
   [pass] constellation lines connect every star: 2 constellations
   [pass] labels clear of stars, lines, labels, reserved areas and margin: 0 conflicts among 5 labels (0 left out)
   [pass] constellation names sit nearer their own stars: 2 names checked
-  [pass] balance (star centroid near the center): off center by 1.2% of width (max 12%), 1.5% of height (max 15%)
+  [pass] balance (star centroid near the center): off center by 0.7% of width (max 12%), 1.5% of height (max 15%)
   [pass] no NaN or infinite numbers: positions, anchors, radii, labels
-SOFT checks (warnings)
-  [ ok ] coverage of the constellations' bounding box: 56% of width (want 55-85%), 53% of height (want 45-80%)
-  [ ok ] average nearest-neighbor distance: 71.3px (want 38-150)
-  [ ok ] distinct star hues: 2 (want at most 7)
-  [warn] largest star-free rectangle (stars only, dust comes later): 43% of the canvas (want under 30%)
-  [ ok ] gap between constellations: closest stars of two constellations are 561px apart (want 60+)
-  [ ok ] labels left out for lack of room: 0 left out
-Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+SOFT (layout)
+  [pass] coverage of the constellations' bounding box: 45% of width (want 45-85%), 44% of height (want 38-80%)
+  [pass] average nearest-neighbor distance: 138.2px (want 38-150)
+  [pass] distinct star hues: 2 (want at most 7)
+  [warn] largest star-free rectangle (stars only, dust comes later): 30% of the canvas (want under 30%)
+  [pass] gap between constellations: closest stars of two constellations are 247px apart (want 60+)
+  [pass] labels left out for lack of room: 0 left out
+  [pass] sparse sky: constellations close together: the most distant pair is 247px apart (want at most 300)
+  [pass] sparse sky: width covered: 45% of the width (want at least 45%)
+HARD (drawn sky)
+  [pass] SVG size: 53663 bytes (limit 307200)
+  [pass] finite numbers: no NaN or infinity in any attribute
+  [pass] references resolve: 139 url(#id) references, 0 broken
+  [pass] ids are unique: 31 ids, 31 distinct
+  [pass] labels clear of rings: 5 labels, none touch a ring
+  [pass] flares clear of labels: 2 flare arms, none touch a label
+  [pass] text contrast: 5 labels, worst 5.33 on "first light" (want at least 4.5)
+SOFT (drawn sky)
+  [pass] SVG size (soft): 53663 bytes (want at most 184320)
+  [pass] constellation lines too short to draw: 0 skipped
+  [pass] labels without a clean spot: 0 dropped
+  [pass] picture brightness (gamma-encoded mean luma): 0.136 (want 0.08-0.30 for a dark theme)
+  [pass] clipped pixels: 0.01% of pixels are 253+ in every channel (want at most 4%)
+  [pass] stars stand out: 100% of 6 stars, 100% of 5 stars at tier 3+ (center 25% brighter than the ring's median)
 
 === medium: 22 stars, 5 constellations, 2 loose, layout try #1, scale 1.00
-HARD checks (must pass)
+HARD (layout)
   [pass] every star has a position: 22 stars, 22 positions
   [pass] star spacing: closest pair is tiny-router and dotfiles-web: 45.7px apart, needs 34.8px
   [pass] stars inside the margin and outside reserved areas: 22 stars checked
@@ -73,17 +124,33 @@ HARD checks (must pass)
   [pass] constellation names sit nearer their own stars: 5 names checked
   [pass] balance (star centroid near the center): off center by 1.2% of width (max 12%), 4.2% of height (max 15%)
   [pass] no NaN or infinite numbers: positions, anchors, radii, labels
-SOFT checks (warnings)
-  [ ok ] coverage of the constellations' bounding box: 82% of width (want 55-85%), 69% of height (want 45-80%)
-  [ ok ] average nearest-neighbor distance: 77.7px (want 38-150)
-  [ ok ] distinct star hues: 7 (want at most 7)
-  [ ok ] largest star-free rectangle (stars only, dust comes later): 20% of the canvas (want under 30%)
-  [ ok ] gap between constellations: closest stars of two constellations are 90px apart (want 60+)
-  [ ok ] labels left out for lack of room: 0 left out
-Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+SOFT (layout)
+  [pass] coverage of the constellations' bounding box: 82% of width (want 55-85%), 69% of height (want 45-80%)
+  [pass] average nearest-neighbor distance: 77.7px (want 38-150)
+  [pass] distinct star hues: 7 (want at most 7)
+  [pass] largest star-free rectangle (stars only, dust comes later): 20% of the canvas (want under 30%)
+  [pass] gap between constellations: closest stars of two constellations are 90px apart (want 60+)
+  [pass] labels left out for lack of room: 0 left out
+  [pass] sparse sky: constellations close together: 22 stars: not a sparse sky
+  [pass] sparse sky: width covered: 22 stars: not a sparse sky
+HARD (drawn sky)
+  [pass] SVG size: 75910 bytes (limit 307200)
+  [pass] finite numbers: no NaN or infinity in any attribute
+  [pass] references resolve: 187 url(#id) references, 0 broken
+  [pass] ids are unique: 77 ids, 77 distinct
+  [pass] labels clear of rings: 11 labels, none touch a ring
+  [pass] flares clear of labels: 2 flare arms, none touch a label
+  [pass] text contrast: 11 labels, worst 5.51 on "first light" (want at least 4.5)
+SOFT (drawn sky)
+  [pass] SVG size (soft): 75910 bytes (want at most 184320)
+  [pass] constellation lines too short to draw: 0 skipped
+  [pass] labels without a clean spot: 0 dropped
+  [pass] picture brightness (gamma-encoded mean luma): 0.140 (want 0.08-0.30 for a dark theme)
+  [pass] clipped pixels: 0.02% of pixels are 253+ in every channel (want at most 4%)
+  [pass] stars stand out: 100% of 22 stars, 100% of 17 stars at tier 3+ (center 25% brighter than the ring's median)
 
 === large: 60 stars, 5 constellations, 1 loose, layout try #4, scale 0.94
-HARD checks (must pass)
+HARD (layout)
   [pass] every star has a position: 60 stars, 60 positions
   [pass] star spacing: closest pair is plucky-loom and dapper-lexer: 43.6px apart, needs 39.6px
   [pass] stars inside the margin and outside reserved areas: 60 stars checked
@@ -94,33 +161,65 @@ HARD checks (must pass)
   [pass] constellation names sit nearer their own stars: 5 names checked
   [pass] balance (star centroid near the center): off center by 0.9% of width (max 12%), 0.8% of height (max 15%)
   [pass] no NaN or infinite numbers: positions, anchors, radii, labels
-SOFT checks (warnings)
-  [ ok ] coverage of the constellations' bounding box: 85% of width (want 55-85%), 72% of height (want 45-80%)
-  [ ok ] average nearest-neighbor distance: 49.4px (want 38-150)
-  [ ok ] distinct star hues: 6 (want at most 7)
-  [ ok ] largest star-free rectangle (stars only, dust comes later): 17% of the canvas (want under 30%)
-  [ ok ] gap between constellations: closest stars of two constellations are 96px apart (want 60+)
-  [ ok ] labels left out for lack of room: 0 left out
-Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+SOFT (layout)
+  [pass] coverage of the constellations' bounding box: 85% of width (want 55-85%), 72% of height (want 45-80%)
+  [pass] average nearest-neighbor distance: 49.4px (want 38-150)
+  [pass] distinct star hues: 6 (want at most 7)
+  [pass] largest star-free rectangle (stars only, dust comes later): 17% of the canvas (want under 30%)
+  [pass] gap between constellations: closest stars of two constellations are 96px apart (want 60+)
+  [pass] labels left out for lack of room: 0 left out
+  [pass] sparse sky: constellations close together: 60 stars: not a sparse sky
+  [pass] sparse sky: width covered: 60 stars: not a sparse sky
+HARD (drawn sky)
+  [pass] SVG size: 119134 bytes (limit 307200)
+  [pass] finite numbers: no NaN or infinity in any attribute
+  [pass] references resolve: 305 url(#id) references, 0 broken
+  [pass] ids are unique: 112 ids, 112 distinct
+  [pass] labels clear of rings: 22 labels, none touch a ring
+  [pass] flares clear of labels: 6 flare arms, none touch a label
+  [pass] text contrast: 22 labels, worst 7.49 on "first light" (want at least 4.5)
+SOFT (drawn sky)
+  [pass] SVG size (soft): 119134 bytes (want at most 184320)
+  [pass] constellation lines too short to draw: 0 skipped
+  [pass] labels without a clean spot: 0 dropped
+  [pass] picture brightness (gamma-encoded mean luma): 0.152 (want 0.08-0.30 for a dark theme)
+  [pass] clipped pixels: 0.06% of pixels are 253+ in every channel (want at most 4%)
+  [pass] stars stand out: 100% of 60 stars, 100% of 60 stars at tier 3+ (center 25% brighter than the ring's median)
 
-=== edge: 13 stars, 2 constellations, 2 loose, layout try #5, scale 1.02
-HARD checks (must pass)
+=== edge: 13 stars, 2 constellations, 2 loose, layout try #1, scale 1.37
+HARD (layout)
   [pass] every star has a position: 13 stars, 13 positions
-  [pass] star spacing: closest pair is alpha and alpha-2: 56.5px apart, needs 37.2px
+  [pass] star spacing: closest pair is no-language-a and naïve-bayes: 69.7px apart, needs 37.2px
   [pass] stars inside the margin and outside reserved areas: 13 stars checked
   [pass] line crossings: 0 crossings among 11 lines
-  [pass] loose stars clear of lines: closest loose star is 264.2px from a line
+  [pass] loose stars clear of lines: closest loose star is 299.6px from a line
   [pass] constellation lines connect every star: 2 constellations
   [pass] labels clear of stars, lines, labels, reserved areas and margin: 0 conflicts among 6 labels (0 left out)
   [pass] constellation names sit nearer their own stars: 2 names checked
-  [pass] balance (star centroid near the center): off center by 1.2% of width (max 12%), 1.5% of height (max 15%)
+  [pass] balance (star centroid near the center): off center by 1.2% of width (max 12%), 0.4% of height (max 15%)
   [pass] no NaN or infinite numbers: positions, anchors, radii, labels
-SOFT checks (warnings)
-  [ ok ] coverage of the constellations' bounding box: 55% of width (want 55-85%), 46% of height (want 45-80%)
-  [ ok ] average nearest-neighbor distance: 99.8px (want 38-150)
-  [ ok ] distinct star hues: 3 (want at most 7)
-  [ ok ] largest star-free rectangle (stars only, dust comes later): 27% of the canvas (want under 30%)
-  [ ok ] gap between constellations: closest stars of two constellations are 463px apart (want 60+)
-  [ ok ] labels left out for lack of room: 0 left out
-Not checkable yet (need drawn output): text contrast 4.5:1 (hard 5); SVG size cap and animation budget (hard 7); luminance histogram (soft 3)
+SOFT (layout)
+  [pass] coverage of the constellations' bounding box: 45% of width (want 45-85%), 69% of height (want 38-80%)
+  [pass] average nearest-neighbor distance: 125.7px (want 38-150)
+  [pass] distinct star hues: 3 (want at most 7)
+  [pass] largest star-free rectangle (stars only, dust comes later): 23% of the canvas (want under 30%)
+  [pass] gap between constellations: closest stars of two constellations are 223px apart (want 60+)
+  [pass] labels left out for lack of room: 0 left out
+  [pass] sparse sky: constellations close together: 13 stars: not a sparse sky
+  [pass] sparse sky: width covered: 13 stars: not a sparse sky
+HARD (drawn sky)
+  [pass] SVG size: 62180 bytes (limit 307200)
+  [pass] finite numbers: no NaN or infinity in any attribute
+  [pass] references resolve: 160 url(#id) references, 0 broken
+  [pass] ids are unique: 41 ids, 41 distinct
+  [pass] labels clear of rings: 6 labels, none touch a ring
+  [pass] flares clear of labels: 2 flare arms, none touch a label
+  [pass] text contrast: 6 labels, worst 6.64 on "first light" (want at least 4.5)
+SOFT (drawn sky)
+  [pass] SVG size (soft): 62180 bytes (want at most 184320)
+  [pass] constellation lines too short to draw: 0 skipped
+  [pass] labels without a clean spot: 0 dropped
+  [pass] picture brightness (gamma-encoded mean luma): 0.140 (want 0.08-0.30 for a dark theme)
+  [pass] clipped pixels: 0.02% of pixels are 253+ in every channel (want at most 4%)
+  [pass] stars stand out: 100% of 13 stars, 100% of 12 stars at tier 3+ (center 25% brighter than the ring's median)
 

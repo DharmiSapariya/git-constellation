@@ -146,15 +146,21 @@ It also prints softer warnings, with numbers: how much of the canvas is covered,
 
 <br>
 
-Three milestones are done: the project scaffold with CI, the data model with every sky rule, and the layout engine with the linter. Milestone four, the actual background art, is next.
+Five milestones are done: the project scaffold with CI, the data model with every sky rule, the layout engine with the linter, the background art (gradient sky, nebula and Milky Way), and now the stars, lines, labels and the title. Milestone six, the moon and the little characters, is next.
 
-So right now the project can decide where every star goes, but it can't draw one yet. Here is what "working" looks like at this stage, a wireframe from a fake account with 150 repos, trimmed to its brightest 60:
+So the project can now draw a whole static sky. This is real output from `constel render`, using a fake account with 22 repos. Nothing moves yet, and the moon, the characters and the twinkling are still to come:
 
 <div align="center">
 
-<img src="docs/preview/debug-large.png" alt="A wireframe of the layout engine: five constellations drawn as plain dots joined by thin straight lines, with red boxes showing where labels will go" width="92%">
+<img src="docs/preview/sky-medium.png" alt="A generated night sky: five constellations of glowing stars joined by thin lines, repo names beside the brightest stars, and a soft Milky Way band behind them" width="92%">
 
-<sub>Ugly on purpose. Five constellations, 60 stars, zero crossing lines, zero overlapping labels.<br>The glow, the nebula and the Milky Way come next.</sub>
+<sub>The midnight theme. Brighter and bigger means a louder repo, dim and dashed means a sleeping one, and the dotted ring marks a repo pushed to recently.</sub>
+
+<br><br>
+
+<img src="docs/preview/sky-paper.png" alt="The same sky in the paper theme: inked stars and thin ink lines on cream paper with soft watercolour washes" width="92%">
+
+<sub>The same account in the paper theme, the light-mode sky.</sub>
 
 </div>
 
@@ -220,7 +226,7 @@ Things I haven't solved yet, in no particular order:
 - **Is the brightness fair?** A repo with 400 commits and no stars versus a repo with 15 stars and three commits. The formula says they're about equal. I'm not sure my gut agrees.
 - **Busy skies.** With 150 repos, labels get dropped to avoid overlaps. I can prove nothing overlaps. I can't yet prove it still *feels* good.
 - **GIF size.** The timelapse of your year could easily be five megabytes. GitHub will happily show that, but nobody will want to load it.
-- **Paper theme.** It exists on paper (sorry) and in a colour table. I haven't seen it rendered yet, so I'm not going to pretend it works.
+- **Paper theme.** It renders now, and I like how it looks, like ink and watercolour on cream paper. It hasn't met a real profile yet, so I'm holding off on celebrating.
 - **Cute without being childish.** The moon has a face. The stars might get faces. I'm still deciding where the line is.
 
 If you've got opinions about any of these, or a really good constellation name, open an issue. I'd love to hear it.
