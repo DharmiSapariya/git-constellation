@@ -239,6 +239,6 @@ If you've got opinions about any of these, or a really good constellation name, 
 <br>
 
 <sub>Public data only. MIT licensed.</sub>
-<sub>A tiny universe under construction, built with love by Dharmi.</sub>
+<sub>A tiny universe under construction, built with 🤍 by Dharmi.</sub>
 
 </div>
